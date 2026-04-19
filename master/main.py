@@ -220,22 +220,22 @@ def eliminar_subarea(area: str, subarea: str, auth: tuple = Depends(usuario_actu
     """
     Elimina una subtemática. Solo si no tiene documentos asociados.
     """
-    username, _ = auth
-    users    = load_users()
-    metadata = load_metadata(username)
+    nombre_usuario, _ = auth
+    usuarios    = cargar_usuarios()
+    metadatos = cargar_metadatos(nombre_usuario)
 
-    if area not in users[username]["areas"]:
+    if area not in usuarios[nombre_usuario]["areas"]:
         raise HTTPException(404, f"El área '{area}' no existe.")
-    if subarea not in users[username]["areas"][area]:
+    if subarea not in usuarios[nombre_usuario]["areas"][area]:
         raise HTTPException(404, f"La subárea '{subarea}' no existe en '{area}'.")
 
-    docs_en_subarea = [f for f in metadata["files"]
+    docs_en_subarea = [f for f in metadatos["files"]
                        if f["area"] == area and f.get("subarea") == subarea]
     if docs_en_subarea:
         raise HTTPException(400, f"La subárea '{subarea}' contiene documentos. Elimínalos primero.")
 
-    users[username]["areas"][area].remove(subarea)
-    save_users(users)
+    usuarios[nombre_usuario]["areas"][area].remove(subarea)
+    guardar_usuarios(usuarios)
     return {"mensaje": f"Subárea '{subarea}' eliminada de '{area}'."}
 
 
