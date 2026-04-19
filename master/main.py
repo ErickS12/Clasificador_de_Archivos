@@ -15,11 +15,11 @@ from fastapi.responses import FileResponse
 import shutil, os, json
 from typing import Optional
 
-from auth      import (hashear_contraseña, verificar_contraseña, generar_token,
+from .auth      import (hashear_contraseña, verificar_contraseña, generar_token,
                         obtener_usuario_del_token, requiere_admin)
-from gateway   import LoggingMiddleware, validar_carga
-from consensus import clasificar_con_consenso
-from adapter   import (adaptar_respuesta_carga, adaptar_respuesta_archivos,
+from .gateway   import LoggingMiddleware, validar_carga
+from .consensus import clasificar_con_consenso
+from .adapter   import (adaptar_respuesta_carga, adaptar_respuesta_archivos,
                         resolver_area, construir_áreas_planas)
 
 app = FastAPI(title="Clasificador Distribuido de Archivos Científicos")

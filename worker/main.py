@@ -9,8 +9,8 @@ ESTADO:
 
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 import shutil, os, json
-from extractor import extraer_texto
-from classifier import clasificar
+from .extractor import extraer_texto
+from .classifier import clasificar
 
 app = FastAPI()
 
