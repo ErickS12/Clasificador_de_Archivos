@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+requests
+pymupdf
+scikit-learn
+python-multipart
+
+# ── FASE 4: descomentar al migrar a Supabase ──────
+# supabase
+# python-dotenv
