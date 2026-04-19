@@ -582,4 +582,4 @@ def admin_eliminar_subarea(nombre_usuario: str, area: str, subarea: str,
 
     usuarios[nombre_usuario]["areas"][area].remove(subarea)
     guardar_usuarios(usuarios)
-    return {"mensaje": f"Subárea '{subarea}' eliminada. Documentos movidos a '{area}'."}}
+    return {"mensaje": f"Subárea '{subarea}' eliminada. Documentos movidos a '{area}'."}
