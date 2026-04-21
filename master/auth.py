@@ -23,20 +23,20 @@ import uuid
 from fastapi import HTTPException, Header
 
 
-def hashear_contraseña(contraseña: str) -> str:
+def hashear_contrasena(contrasena: str) -> str:
     """Genera salt aleatorio y devuelve 'salt$hash'."""
     iteraciones = 100_000
     salt = os.urandom(16).hex()
-    clave  = hashlib.pbkdf2_hmac("sha256", contraseña.encode(), salt.encode(), iteraciones)
+    clave  = hashlib.pbkdf2_hmac("sha256", contrasena.encode(), salt.encode(), iteraciones)
     return f"{salt}${clave.hex()}"
 
 
-def verificar_contraseña(contraseña: str, almacenado: str) -> bool:
+def verificar_contrasena(contrasena: str, almacenado: str) -> bool:
     """Verifica la contraseña contra el hash almacenado."""
     iteraciones = 100_000
     try:
         salt, clave = almacenado.split("$")
-        clave_nueva = hashlib.pbkdf2_hmac("sha256", contraseña.encode(), salt.encode(), iteraciones)
+        clave_nueva = hashlib.pbkdf2_hmac("sha256", contrasena.encode(), salt.encode(), iteraciones)
         return clave_nueva.hex() == clave
     except Exception:
         return False

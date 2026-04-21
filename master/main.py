@@ -1,6 +1,6 @@
 """
 Nodo Maestro — API Principal
-=============================
+
 Endpoints organizados en cuatro bloques:
 
   1. Autenticación  — /register, /login, /logout
@@ -9,18 +9,18 @@ Endpoints organizados en cuatro bloques:
   4. Admin          — /admin/*  (solo rol administrador)
 """
 
-from fastapi import FastAPI, UploadFile, File, HTTPException, Header, Depends
+from fastapi import FastAPI, UploadFile, File, HTTPException, Header, Depends, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 import shutil, os, json
 from typing import Optional
 
-from .auth      import (hashear_contraseña, verificar_contraseña, generar_token,
+from .auth      import (hashear_contrasena, verificar_contrasena, generar_token,
                         obtener_usuario_del_token, requiere_admin)
 from .gateway   import LoggingMiddleware, validar_carga
 from .consensus import clasificar_con_consenso
 from .adapter   import (adaptar_respuesta_carga, adaptar_respuesta_archivos,
-                        resolver_area, construir_áreas_planas)
+                        resolver_area, construir_areas_planas)
 
 app = FastAPI(title="Clasificador Distribuido de Archivos Científicos")
 
@@ -83,7 +83,7 @@ def usuario_actual(autorizacion: str = Header(...)) -> tuple[str, dict]:
 # ══════════════════════════════════════════════════════════════════════════
 
 @app.post("/register", tags=["auth"])
-def registrar(nombre_usuario: str, contraseña: str):
+def registrar(nombre_usuario: str, contrasena: str):
     """
     Registra un nuevo usuario.
     El primer usuario registrado recibe rol de administrador automáticamente.
@@ -93,13 +93,13 @@ def registrar(nombre_usuario: str, contraseña: str):
 
     if nombre_usuario in usuarios:
         raise HTTPException(400, "El nombre de usuario ya existe.")
-    if len(contraseña) < 6:
+    if len(contrasena) < 6:
         raise HTTPException(400, "La contraseña debe tener al menos 6 caracteres.")
 
     rol = "admin" if not usuarios else "user"
 
     usuarios[nombre_usuario] = {
-        "password_hash":  hashear_contraseña(contraseña),
+        "password_hash":  hashear_contrasena(contrasena),
         "role":           rol,
         "session_token":  None,
         "areas":          {"General": []}
@@ -109,7 +109,7 @@ def registrar(nombre_usuario: str, contraseña: str):
 
 
 @app.post("/login", tags=["auth"])
-def iniciar_sesion(nombre_usuario: str, contraseña: str):
+def iniciar_sesion(nombre_usuario: str, contrasena: str):
     """
     Inicia sesión. Devuelve un token de sesión que debe enviarse
     en el header Authorization: Bearer <token> en cada request.
@@ -118,7 +118,7 @@ def iniciar_sesion(nombre_usuario: str, contraseña: str):
 
     if nombre_usuario not in usuarios:
         raise HTTPException(401, "Usuario o contraseña incorrectos.")
-    if not verificar_contraseña(contraseña, usuarios[nombre_usuario]["password_hash"]):
+    if not verificar_contrasena(contrasena, usuarios[nombre_usuario]["password_hash"]):
         raise HTTPException(401, "Usuario o contraseña incorrectos.")
 
     token = generar_token()
@@ -147,8 +147,8 @@ def cerrar_sesion(auth: tuple = Depends(usuario_actual)):
 # ══════════════════════════════════════════════════════════════════════════
 
 @app.get("/categories", tags=["areas"])
-def obtener_categorías(auth: tuple = Depends(usuario_actual)):
-    """Devuelve la jerarquía completa de áreas del usuario."""
+def obtener_categorias(auth: tuple = Depends(usuario_actual)):
+    """Devuelve la jerarquia completa de areas del usuario."""
     nombre_usuario, datos = auth
     return {"areas": datos["areas"]}
 
@@ -177,14 +177,14 @@ def crear_subarea(area: str, subarea: str, auth: tuple = Depends(usuario_actual)
     """Crea una subatemática dentro de una temática existente."""
     nombre_usuario, _ = auth
     usuarios = cargar_usuarios()
-    áreas_usuario = usuarios[nombre_usuario]["areas"]
+    areas_usuario = usuarios[nombre_usuario]["areas"]
 
-    if area not in áreas_usuario:
+    if area not in areas_usuario:
         raise HTTPException(404, f"El área '{area}' no existe.")
-    if subarea in áreas_usuario[area]:
-        raise HTTPException(400, f"La subárea '{subarea}' ya existe en '{area}'.")
+    if subarea in areas_usuario[area]:
+        raise HTTPException(400, f"La subárea '{subarea}' ya existe en '{area}'\.")
 
-    áreas_usuario[area].append(subarea)
+    areas_usuario[area].append(subarea)
     guardar_usuarios(usuarios)
     return {"mensaje": f"Subárea '{subarea}' creada en '{area}'."}
 
@@ -259,16 +259,16 @@ async def cargar_archivo(archivo: UploadFile = File(...),
     nombre_usuario, datos_usuario = auth
     validar_carga(archivo)
 
-    áreas_usuario  = datos_usuario["areas"]
-    áreas_planas  = construir_áreas_planas(áreas_usuario)
+    areas_usuario  = datos_usuario["areas"]
+    areas_planas  = construir_areas_planas(areas_usuario)
 
     ruta_temporal = f"temp_{nombre_usuario}_{archivo.filename}"
     with open(ruta_temporal, "wb") as buf:
         shutil.copyfileobj(archivo.file, buf)
 
     try:
-        predicho, votos  = clasificar_con_consenso(ruta_temporal, áreas_planas)
-        area, subarea     = resolver_area(predicho, áreas_usuario)
+        predicho, votos  = clasificar_con_consenso(ruta_temporal, areas_planas)
+        area, subarea     = resolver_area(predicho, areas_usuario)
 
         nodos_almacenados = []
         for nodo in NODOS:
@@ -312,12 +312,12 @@ def obtener_archivos(auth: tuple = Depends(usuario_actual)):
     }
     """
     nombre_usuario, datos_usuario = auth
-    áreas_usuario = datos_usuario["areas"]
+    areas_usuario = datos_usuario["areas"]
     metadatos   = cargar_metadatos(nombre_usuario)
 
     # Inicializar árbol con todas las áreas (aunque vacías)
     arbol = {}
-    for area, subareas in áreas_usuario.items():
+    for area, subareas in areas_usuario.items():
         arbol[area] = {"files": []}
         for sub in subareas:
             arbol[area][sub] = {"files": []}
@@ -339,8 +339,9 @@ def obtener_archivos(auth: tuple = Depends(usuario_actual)):
 
 
 @app.get("/download", tags=["documentos"])
-def descargar_archivo(nombre_archivo: str, area: str,
-                  subarea: Optional[str] = None,
+def descargar_archivo(nombre_archivo: str = Query(..., description="Nombre del archivo a descargar"),
+                  area: str = Query(..., description="Área donde está clasificado el archivo"),
+                  subarea: Optional[str] = Query(None, description="Subárea (opcional)"),
                   auth: tuple = Depends(usuario_actual)):
     """
     Descarga un archivo intentando node1 → node2 → node3.
@@ -410,7 +411,7 @@ def listar_usuarios(auth: tuple = Depends(obtener_admin)):
 
 
 @app.post("/admin/users", tags=["admin"])
-def admin_crear_usuario(nombre_usuario: str, contraseña: str,
+def admin_crear_usuario(nombre_usuario: str, contrasena: str,
                        rol: str = "user",
                        auth: tuple = Depends(obtener_admin)):
     """
@@ -425,7 +426,7 @@ def admin_crear_usuario(nombre_usuario: str, contraseña: str,
         raise HTTPException(400, "El nombre de usuario ya existe.")
 
     usuarios[nombre_usuario] = {
-        "password_hash": hashear_contraseña(contraseña),
+        "password_hash": hashear_contrasena(contrasena),
         "role":          rol,
         "session_token": None,
         "areas":         {"General": []}
@@ -467,14 +468,16 @@ def admin_eliminar_usuario(nombre_usuario: str, auth: tuple = Depends(obtener_ad
 @app.put("/admin/users/{nombre_usuario}", tags=["admin"])
 def admin_actualizar_usuario(nombre_usuario: str,
                        nuevo_nombre_usuario: Optional[str] = None,
-                       nueva_contraseña: Optional[str] = None,
+                       nueva_contrasena: Optional[str] = None,
+                       nuevo_rol: Optional[str] = None,
                        auth: tuple = Depends(obtener_admin)):
     """
-    Modifica el nombre de usuario y/o contraseña de cualquier cuenta.
-    Al menos uno de los dos parámetros debe enviarse.
+    Modifica el nombre de usuario, contraseña y/o rol de cualquier cuenta.
+    Al menos uno de los parámetros debe enviarse.
+    Roles válidos: 'user', 'admin'.
     """
-    if not nuevo_nombre_usuario and not nueva_contraseña:
-        raise HTTPException(400, "Debes proporcionar nuevo nombre de usuario y/o nueva contraseña.")
+    if not nuevo_nombre_usuario and not nueva_contrasena and not nuevo_rol:
+        raise HTTPException(400, "Debes proporcionar nuevo nombre de usuario, nueva contraseña y/o nuevo rol.")
 
     usuarios = cargar_usuarios()
     if nombre_usuario not in usuarios:
@@ -502,11 +505,16 @@ def admin_actualizar_usuario(nombre_usuario: str,
 
         nombre_usuario = nuevo_nombre_usuario
 
-    if nueva_contraseña:
-        if len(nueva_contraseña) < 6:
+    if nueva_contrasena:
+        if len(nueva_contrasena) < 6:
             raise HTTPException(400, "La contraseña debe tener al menos 6 caracteres.")
-        usuarios[nombre_usuario]["password_hash"] = hashear_contraseña(nueva_contraseña)
+        usuarios[nombre_usuario]["password_hash"] = hashear_contrasena(nueva_contrasena)
         usuarios[nombre_usuario]["session_token"] = None  # forzar re-login
+
+    if nuevo_rol:
+        if nuevo_rol not in ("user", "admin"):
+            raise HTTPException(400, "Rol inválido. Usa 'user' o 'admin'.")
+        usuarios[nombre_usuario]["role"] = nuevo_rol
 
     guardar_usuarios(usuarios)
     return {"mensaje": f"Usuario actualizado correctamente.", "nombre_usuario": nombre_usuario}

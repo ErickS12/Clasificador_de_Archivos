@@ -30,14 +30,14 @@ WORKERS = [
 
 
 
-def enviar_a_worker(url_worker: str, ruta_pdf: str, áreas_planas: list[str]) -> str | None:
+def enviar_a_worker(url_worker: str, ruta_pdf: str, areas_planas: list[str]) -> str | None:
     """Envía el PDF a un worker. Retorna el área predicha o None si falla."""
     try:
         with open(ruta_pdf, "rb") as f:
             response = requests.post(
                 url_worker,
-                files={"file": f},
-                data={"user_areas": json.dumps(áreas_planas)},
+                files={"archivo": f},
+                data={"areas_usuario": json.dumps(areas_planas)},
                 timeout=10
             )
         return response.json()["area"]
@@ -45,7 +45,7 @@ def enviar_a_worker(url_worker: str, ruta_pdf: str, áreas_planas: list[str]) ->
         return None
 
 
-def clasificar_con_consenso(ruta_pdf: str, áreas_planas: list[str]) -> tuple[str, dict]:
+def clasificar_con_consenso(ruta_pdf: str, areas_planas: list[str]) -> tuple[str, dict]:
     """
     Clasifica el PDF usando consenso de mayoría entre los workers.
 
@@ -57,7 +57,7 @@ def clasificar_con_consenso(ruta_pdf: str, áreas_planas: list[str]) -> tuple[st
 
     for i, url in enumerate(WORKERS):
         nodo = f"node{i + 1}"
-        area = enviar_a_worker(url, ruta_pdf, áreas_planas)
+        area = enviar_a_worker(url, ruta_pdf, areas_planas)
         if area is not None:
             votos[nodo] = area
             resultados.append(area)

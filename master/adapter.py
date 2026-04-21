@@ -51,28 +51,28 @@ def adaptar_respuesta_archivos(nombre_usuario: str, arbol: dict) -> dict:
     }
 
 
-def resolver_area(predicho: str, áreas_usuario: dict) -> tuple[str, str]:
+def resolver_area(predicho: str, areas_usuario: dict) -> tuple[str, str]:
     """
     Resuelve el área y subárea a partir de la predicción del clasificador
-    y la jerarquía del usuario.
+    y la jerraquía del usuario.
 
-    áreas_usuario: {"Redes": ["Protocolos", "Topologías"], "General": []}
+    areas_usuario: {"Redes": ["Protocolos", "Topologías"], "General": []}
 
     Retorna (area, subarea). Si no hay match → ("General", "").
     """
-    if predicho in áreas_usuario:
+    if predicho in areas_usuario:
         return predicho, ""
 
-    for area, subareas in áreas_usuario.items():
+    for area, subareas in areas_usuario.items():
         if predicho in subareas:
             return area, predicho
 
     return "General", ""
 
 
-def construir_áreas_planas(áreas_usuario: dict) -> list[str]:
+def construir_areas_planas(areas_usuario: dict) -> list[str]:
     """Construye lista plana de todas las áreas y subáreas para el clasificador."""
-    planas = list(áreas_usuario.keys())
-    for subareas in áreas_usuario.values():
+    planas = list(areas_usuario.keys())
+    for subareas in areas_usuario.values():
         planas.extend(subareas)
     return list(set(planas))

@@ -37,16 +37,16 @@ async def evento_inicio():
 @app.post("/process")
 async def procesar_archivo(
     archivo: UploadFile = File(...),
-    áreas_usuario: str  = Form(...)
+    areas_usuario: str  = Form(...)
 ):
     """✅ Extrae texto del PDF y clasifica con TF-IDF + LogisticRegression."""
-    áreas = json.loads(áreas_usuario)
+    areas = json.loads(areas_usuario)
 
     with open(RUTA_TEMP, "wb") as buf:
         shutil.copyfileobj(archivo.file, buf)
 
     texto = extraer_texto(RUTA_TEMP)
-    area = clasificar(texto, áreas)
+    area = clasificar(texto, areas)
 
     os.remove(RUTA_TEMP)
     return {"area": area}

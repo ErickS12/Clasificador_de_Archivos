@@ -29,15 +29,15 @@ TRAINING_DATA = [
     ("software defined networking SDN OpenFlow controller", "Redes"),
     ("peer to peer overlay gossip protocol", "Redes"),
 
-    # Protocolos (subtemática de Redes)
+    # Protocolos (subcateg de Redes)
     ("HTTP HTTPS REST protocol request response header", "Protocolos"),
     ("TCP UDP handshake flow control congestion protocol", "Protocolos"),
     ("MQTT CoAP IoT lightweight protocol message broker", "Protocolos"),
     ("BGP OSPF routing protocol autonomous system", "Protocolos"),
 
-    # Topologías (subtemática de Redes)
-    ("star mesh ring bus topology network layout", "Topologías"),
-    ("tree hybrid topology nodes edges graph network", "Topologías"),
+    # Topologias (subcateg de Redes)
+    ("star mesh ring bus topology network layout", "Topologias"),
+    ("tree hybrid topology nodes edges graph network", "Topologias"),
 
     # Sistemas Operativos
     ("operating system kernel process thread scheduler", "Sistemas Operativos"),
@@ -58,16 +58,16 @@ TRAINING_DATA = [
     ("distributed database replication sharding partition", "Bases de Datos"),
     ("ACID properties concurrency control locking", "Bases de Datos"),
 
-    # Biología
-    ("genomics DNA sequence protein expression cell", "Biología"),
-    ("CRISPR gene editing mutation chromosome biology", "Biología"),
-    ("bioinformatics phylogenetics evolution species", "Biología"),
+    # Biologia
+    ("genomics DNA sequence protein expression cell", "Biologia"),
+    ("CRISPR gene editing mutation chromosome biology", "Biologia"),
+    ("bioinformatics phylogenetics evolution species", "Biologia"),
 
-    # Matemáticas
-    ("theorem proof algebra topology manifold differential", "Matemáticas"),
-    ("numerical method optimization convergence", "Matemáticas"),
-    ("stochastic process probability distribution variance", "Matemáticas"),
-    ("linear algebra matrix eigenvalue decomposition", "Matemáticas"),
+    # Matematicas
+    ("theorem proof algebra topology manifold differential", "Matematicas"),
+    ("numerical method optimization convergence", "Matematicas"),
+    ("stochastic process probability distribution variance", "Matematicas"),
+    ("linear algebra matrix eigenvalue decomposition", "Matematicas"),
 ]
 
 textos  = [t for t, _ in TRAINING_DATA]
@@ -80,18 +80,18 @@ pipeline = Pipeline([
 pipeline.fit(textos, etiquetas)
 
 
-def clasificar(texto: str, áreas_usuario: list[str]) -> str:
+def clasificar(texto: str, areas_usuario: list[str]) -> str:
     """
-    Clasifica el texto. Si el área predicha no está en áreas_usuario,
+    Clasifica el texto. Si el área predicha no está en areas_usuario,
     devuelve 'General'.
 
     Parámetros:
         texto       — texto extraído del PDF
-        áreas_usuario — lista plana de áreas y subáreas del usuario
+        areas_usuario — lista plana de áreas y subáreas del usuario
 
     Retorna:
         nombre del área predicha o 'General'
     """
     limpio     = texto.lower()[:3000]
     predicho = pipeline.predict([limpio])[0]
-    return predicho if predicho in áreas_usuario else "General"
+    return predicho if predicho in areas_usuario else "General"
