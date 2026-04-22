@@ -1,107 +1,82 @@
-# Frontend — React.js
-## ESTADO: 🔲 PENDIENTE — FASE 8
+# Frontend del Clasificador Distribuido
 
----
+Guia de integracion del cliente web con la API del sistema.
 
-## Stack tecnológico
+## Stack recomendado
 
-- **React.js** — framework principal (SPA)
-- **React Router** — navegación entre vistas
-- **Axios** — llamadas HTTP al backend
-- **citation-js** — generación de citas APA 7
-- **Tailwind CSS** (sugerido) — estilos
+- Vite + React
+- React Router
+- Axios
+- Context API o Zustand para estado de autenticacion
 
-## Instalación
+## Estructura sugerida
 
-```bash
-cd frontend
-npm create vite@latest . -- --template react
-npm install
-npm install axios react-router-dom citation-js
+```text
+src/
+  api/
+    client.js
+  auth/
+    auth-context.jsx
+    auth-guard.jsx
+  pages/
+    Login.jsx
+    Register.jsx
+    Dashboard.jsx
+    AdminUsers.jsx
+  components/
+    UploadForm.jsx
+    FileTree.jsx
+    VoteSummary.jsx
+    Navbar.jsx
 ```
 
----
+## Configuracion de API
 
-## Pantallas a implementar
+Archivo recomendado en src/api/client.js:
 
-### Pantalla 1 — Login / Register
-```
-TODO FASE 8:
-  - Formulario: username + password
-  - POST /register  → crear cuenta
-  - POST /auth/login → obtener token JWT
-  - Guardar token en localStorage
-  - Redirigir según rol (admin → panel admin, user → panel usuario)
-```
+```js
+import axios from "axios";
 
-### Pantalla 2 — Panel de Usuario
-```
-TODO FASE 8:
-  - GET /themes → mostrar árbol de 2 niveles (temáticas y subtemáticas)
-  - Botón "Nueva temática" → POST /themes
-  - Botón "Nueva subtemática" → POST /themes/{id}/sub
-  - Botón "Eliminar" en temática/subtemática vacía → DELETE /themes/{id}
-  - Botón "Subir PDF" → POST /upload (con token en header)
-  - Para cada archivo: botón "Descargar" y "Eliminar"
-  - Checkbox en archivos para selección múltiple (para APA 7)
-```
-
-### Pantalla 3 — Generador APA 7
-```
-TODO FASE 8:
-  - Selección múltiple de documentos del árbol
-  - Botón "Generar referencias" → POST /apa con lista de IDs
-  - Mostrar lista de citas formateadas en APA 7
-  - Botón "Copiar al portapapeles"
-
-  Opción alternativa (procesamiento en frontend):
-    - Extraer metadatos del PDF con pdf-parse o similar
-    - Formatear con citation-js directamente en el navegador
-    - Sin necesidad del endpoint POST /apa
-```
-
-### Pantalla 4 — Panel de Administrador
-```
-TODO FASE 8:
-  - Tabla de todos los usuarios con sus roles
-  - Botón "Dar de alta" → formulario → POST /admin/users
-  - Botón "Dar de baja" → DELETE /admin/users/{id}
-  - Botón "Editar" → modal con username/password → PUT /admin/users/{id}
-  - Para cada usuario: ver su árbol de temáticas
-  - Botón "Eliminar temática" (aunque no esté vacía) → DELETE /themes/{id} con rol admin
-```
-
----
-
-## Manejo del token JWT en todas las peticiones
-
-```javascript
-// utils/api.js
-import axios from 'axios';
-
-const api = axios.create({
-  baseURL: 'http://localhost:8000',
+export const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL,
 });
 
-api.interceptors.request.use(config => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("token");
+  if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
-
-export default api;
 ```
 
----
+Archivo .env del frontend:
 
-## Variables de entorno
-
-```env
-# frontend/.env
+```text
 VITE_API_URL=http://localhost:8000
-
-# TODO FASE 7: cambiar a IP del maestro en la LAN
-# VITE_API_URL=http://192.168.1.100:8000
 ```
+
+## Vistas funcionales
+
+- Login y registro
+- Dashboard de usuario para carga, listado, descarga y eliminacion
+- Vista de clasificacion con votos por nodo
+- Panel administrativo para gestion de usuarios y areas
+
+## Flujo recomendado
+
+1. Usuario inicia sesion y guarda token
+2. Navega areas y subareas permitidas
+3. Sube PDF y visualiza resultado de clasificacion
+4. Consulta arbol de documentos
+5. Descarga o elimina documentos segun permisos
+
+## Comandos de desarrollo
+
+```bash
+npm install
+npm run dev
+```
+
+## Consideraciones de red
+
+- En entorno local, usar localhost
+- En LAN, configurar VITE_API_URL con la URL del nodo lider

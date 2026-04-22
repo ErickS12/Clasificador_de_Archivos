@@ -1,94 +1,37 @@
 """
-Nodo Maestro — API Principal
+master/routes.py
+=================
+Router con todos los endpoints del maestro.
+Se importa en worker/main.py para que cualquier nodo
+pueda activar estas rutas cuando gane la elección de líder.
 
-Endpoints organizados en cuatro bloques:
+En master/main.py se usa así:
+    from .routes import router
+    app.include_router(router)
 
-  1. Autenticación  — /register, /login, /logout
-  2. Áreas          — /areas  (temáticas y subtemáticas, 2 niveles)
-  3. Documentos     — /upload, /files, /download, /document
-  4. Admin          — /admin/*  (solo rol administrador)
+En worker/main.py se usa así:
+    from master.routes import router as router_maestro
+    app.include_router(router_maestro)
 """
 
-from fastapi import FastAPI, UploadFile, File, HTTPException, Header, Depends, Query
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, RedirectResponse
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.requests import Request
+from fastapi import APIRouter, UploadFile, File, HTTPException, Header, Depends, Query
+from fastapi.responses import FileResponse
 import shutil, os, json
 from typing import Optional
 
-from shared.election import iniciar as iniciar_eleccion, yo_soy_lider, obtener_url_lider
-from .auth      import (hashear_contrasena, verificar_contrasena, generar_token,
-                        obtener_usuario_del_token, requiere_admin)
-from .gateway   import LoggingMiddleware, validar_carga
-from .consensus import clasificar_con_consenso
-from .adapter   import (adaptar_respuesta_carga, adaptar_respuesta_archivos,
-                        resolver_area, construir_areas_planas)
+from master.auth     import (hashear_contrasena, verificar_contrasena, generar_token,
+                              obtener_usuario_del_token, requiere_admin)
+from master.gateway  import validar_carga
+from master.consensus import clasificar_con_consenso
+from master.adapter  import (adaptar_respuesta_carga, adaptar_respuesta_archivos,
+                              resolver_area, construir_areas_planas)
 
-app = FastAPI(title="Clasificador Distribuido de Archivos Científicos")
+router = APIRouter()
 
-# ── Rutas ──────────────────────────────────────────────────────────────────
 NODOS               = ["node1", "node2", "node3"]
 BASE_ALMACENAMIENTO = "../storage/"
 RUTA_METADATOS      = "../metadata/users/"
 ARCHIVO_USUARIOS    = "../metadata/users.json"
-
-for nodo in NODOS:
-    os.makedirs(os.path.join(BASE_ALMACENAMIENTO, nodo), exist_ok=True)
-os.makedirs(RUTA_METADATOS, exist_ok=True)
-
-if not os.path.exists(ARCHIVO_USUARIOS):
-    with open(ARCHIVO_USUARIOS, "w") as f:
-        json.dump({}, f, indent=4)
-
-
-# ══════════════════════════════════════════════════════════════════════════
-# MIDDLEWARE
-# ══════════════════════════════════════════════════════════════════════════
-
-# Endpoints que todo nodo atiende sin importar si es líder o no
-ENDPOINTS_LOCALES = {
-    "/heartbeat",
-    "/election/start",
-    "/election/coordinator",
-    "/leader",
-    "/docs",
-    "/openapi.json",
-}
-
-class RedirigirAlLiderMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
-        if request.url.path in ENDPOINTS_LOCALES or yo_soy_lider():
-            return await call_next(request)
-
-        url_lider = obtener_url_lider()
-        if url_lider:
-            destino = f"{url_lider}{request.url.path}"
-            if request.url.query:
-                destino += f"?{request.url.query}"
-            return RedirectResponse(url=destino, status_code=307)
-
-        from fastapi.responses import JSONResponse
-        return JSONResponse(
-            {"detail": "Sin líder disponible. Reintenta en unos segundos."},
-            status_code=503,
-        )
-
-# Orden: RedirigirAlLider primero → luego CORS → luego Logging
-app.add_middleware(RedirigirAlLiderMiddleware)
-app.add_middleware(CORSMiddleware, allow_origins=["*"],
-                   allow_methods=["*"], allow_headers=["*"])
-app.add_middleware(LoggingMiddleware)
-
-
-# ══════════════════════════════════════════════════════════════════════════
-# STARTUP
-# ══════════════════════════════════════════════════════════════════════════
-
-@app.on_event("startup")
-async def evento_inicio():
-    iniciar_eleccion(app)
-    print("[MASTER] Iniciado.")
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -116,7 +59,7 @@ def guardar_metadatos(usuario: str, datos: dict):
         json.dump(datos, f, indent=4)
 
 
-# ── Dependencia reutilizable: extrae y valida el token ────────────────────
+# ── Dependencia reutilizable ──────────────────────────────────────────────
 
 def usuario_actual(autorizacion: str = Header(...)) -> tuple[str, dict]:
     if not autorizacion.startswith("Bearer "):
@@ -125,64 +68,49 @@ def usuario_actual(autorizacion: str = Header(...)) -> tuple[str, dict]:
     usuarios = cargar_usuarios()
     return obtener_usuario_del_token(token, usuarios)
 
+def obtener_admin(auth: tuple = Depends(usuario_actual)) -> tuple[str, dict]:
+    nombre_usuario, datos = auth
+    requiere_admin(datos)
+    return nombre_usuario, datos
+
 
 # ══════════════════════════════════════════════════════════════════════════
 # 1. AUTENTICACIÓN
 # ══════════════════════════════════════════════════════════════════════════
 
-@app.post("/register", tags=["auth"])
+@router.post("/register", tags=["auth"])
 def registrar(nombre_usuario: str, contrasena: str):
-    """
-    Registra un nuevo usuario.
-    El primer usuario registrado recibe rol de administrador automáticamente.
-    'General' siempre se agrega como área por defecto.
-    """
     usuarios = cargar_usuarios()
-
     if nombre_usuario in usuarios:
         raise HTTPException(400, "El nombre de usuario ya existe.")
     if len(contrasena) < 6:
         raise HTTPException(400, "La contraseña debe tener al menos 6 caracteres.")
-
     rol = "admin" if not usuarios else "user"
-
     usuarios[nombre_usuario] = {
-        "password_hash":  hashear_contrasena(contrasena),
-        "role":           rol,
-        "session_token":  None,
-        "areas":          {"General": []}
+        "password_hash": hashear_contrasena(contrasena),
+        "role":          rol,
+        "session_token": None,
+        "areas":         {"General": []}
     }
     guardar_usuarios(usuarios)
     return {"mensaje": f"Usuario '{nombre_usuario}' registrado.", "rol": rol}
 
 
-@app.post("/login", tags=["auth"])
+@router.post("/login", tags=["auth"])
 def iniciar_sesion(nombre_usuario: str, contrasena: str):
-    """
-    Inicia sesión. Devuelve un token de sesión que debe enviarse
-    en el header Authorization: Bearer <token> en cada request.
-    """
     usuarios = cargar_usuarios()
-
     if nombre_usuario not in usuarios:
         raise HTTPException(401, "Usuario o contraseña incorrectos.")
     if not verificar_contrasena(contrasena, usuarios[nombre_usuario]["password_hash"]):
         raise HTTPException(401, "Usuario o contraseña incorrectos.")
-
     token = generar_token()
     usuarios[nombre_usuario]["session_token"] = token
     guardar_usuarios(usuarios)
-
-    return {
-        "mensaje": "Sesión iniciada.",
-        "token":   token,
-        "rol":     usuarios[nombre_usuario]["role"]
-    }
+    return {"mensaje": "Sesión iniciada.", "token": token, "rol": usuarios[nombre_usuario]["role"]}
 
 
-@app.post("/logout", tags=["auth"])
+@router.post("/logout", tags=["auth"])
 def cerrar_sesion(auth: tuple = Depends(usuario_actual)):
-    """Cierra la sesión invalidando el token."""
     nombre_usuario, _ = auth
     usuarios = cargar_usuarios()
     usuarios[nombre_usuario]["session_token"] = None
@@ -191,93 +119,69 @@ def cerrar_sesion(auth: tuple = Depends(usuario_actual)):
 
 
 # ══════════════════════════════════════════════════════════════════════════
-# 2. ÁREAS (temáticas y subtemáticas — 2 niveles)
+# 2. ÁREAS
 # ══════════════════════════════════════════════════════════════════════════
 
-@app.get("/categories", tags=["areas"])
+@router.get("/categories", tags=["areas"])
 def obtener_categorias(auth: tuple = Depends(usuario_actual)):
-    """Devuelve la jerarquia completa de areas del usuario."""
     nombre_usuario, datos = auth
     return {"areas": datos["areas"]}
 
 
-@app.post("/areas", tags=["areas"])
+@router.post("/areas", tags=["areas"])
 def crear_area(area: str, auth: tuple = Depends(usuario_actual)):
-    """
-    Crea una nueva temática de primer nivel.
-    'General' siempre existe y no puede crearse manualmente.
-    """
     nombre_usuario, _ = auth
     usuarios = cargar_usuarios()
-
     if area == "General":
         raise HTTPException(400, "'General' es un área reservada del sistema.")
     if area in usuarios[nombre_usuario]["areas"]:
         raise HTTPException(400, f"El área '{area}' ya existe.")
-
     usuarios[nombre_usuario]["areas"][area] = []
     guardar_usuarios(usuarios)
     return {"mensaje": f"Área '{area}' creada."}
 
 
-@app.post("/areas/{area}/sub", tags=["areas"])
+@router.post("/areas/{area}/sub", tags=["areas"])
 def crear_subarea(area: str, subarea: str, auth: tuple = Depends(usuario_actual)):
-    """Crea una subatemática dentro de una temática existente."""
     nombre_usuario, _ = auth
     usuarios = cargar_usuarios()
     areas_usuario = usuarios[nombre_usuario]["areas"]
-
     if area not in areas_usuario:
         raise HTTPException(404, f"El área '{area}' no existe.")
     if subarea in areas_usuario[area]:
         raise HTTPException(400, f"La subárea '{subarea}' ya existe en '{area}'.")
-
     areas_usuario[area].append(subarea)
     guardar_usuarios(usuarios)
     return {"mensaje": f"Subárea '{subarea}' creada en '{area}'."}
 
 
-@app.delete("/areas/{area}", tags=["areas"])
+@router.delete("/areas/{area}", tags=["areas"])
 def eliminar_area(area: str, auth: tuple = Depends(usuario_actual)):
-    """
-    Elimina una temática. Solo si está vacía (sin documentos ni subáreas con documentos).
-    Los administradores pueden usar /admin/areas/{user}/{area} para borrar aunque no esté vacía.
-    """
     nombre_usuario, _ = auth
-    usuarios    = cargar_usuarios()
+    usuarios  = cargar_usuarios()
     metadatos = cargar_metadatos(nombre_usuario)
-
     if area == "General":
         raise HTTPException(400, "No se puede eliminar el área 'General'.")
     if area not in usuarios[nombre_usuario]["areas"]:
         raise HTTPException(404, f"El área '{area}' no existe.")
-
-    docs_en_area = [f for f in metadatos["files"] if f["area"] == area]
-    if docs_en_area:
+    if any(f["area"] == area for f in metadatos["files"]):
         raise HTTPException(400, f"El área '{area}' contiene documentos. Elimínalos primero.")
-
     del usuarios[nombre_usuario]["areas"][area]
     guardar_usuarios(usuarios)
     return {"mensaje": f"Área '{area}' eliminada."}
 
 
-@app.delete("/areas/{area}/sub/{subarea}", tags=["areas"])
+@router.delete("/areas/{area}/sub/{subarea}", tags=["areas"])
 def eliminar_subarea(area: str, subarea: str, auth: tuple = Depends(usuario_actual)):
-    """Elimina una subtemática. Solo si no tiene documentos asociados."""
     nombre_usuario, _ = auth
-    usuarios    = cargar_usuarios()
+    usuarios  = cargar_usuarios()
     metadatos = cargar_metadatos(nombre_usuario)
-
     if area not in usuarios[nombre_usuario]["areas"]:
         raise HTTPException(404, f"El área '{area}' no existe.")
     if subarea not in usuarios[nombre_usuario]["areas"][area]:
         raise HTTPException(404, f"La subárea '{subarea}' no existe en '{area}'.")
-
-    docs_en_subarea = [f for f in metadatos["files"]
-                       if f["area"] == area and f.get("subarea") == subarea]
-    if docs_en_subarea:
+    if any(f["area"] == area and f.get("subarea") == subarea for f in metadatos["files"]):
         raise HTTPException(400, f"La subárea '{subarea}' contiene documentos. Elimínalos primero.")
-
     usuarios[nombre_usuario]["areas"][area].remove(subarea)
     guardar_usuarios(usuarios)
     return {"mensaje": f"Subárea '{subarea}' eliminada de '{area}'."}
@@ -287,22 +191,11 @@ def eliminar_subarea(area: str, subarea: str, auth: tuple = Depends(usuario_actu
 # 3. DOCUMENTOS
 # ══════════════════════════════════════════════════════════════════════════
 
-@app.post("/upload", tags=["documentos"])
+@router.post("/upload", tags=["documentos"])
 async def cargar_archivo(archivo: UploadFile = File(...),
-                      auth: tuple = Depends(usuario_actual)):
-    """
-    Sube un PDF, lo clasifica por consenso y lo replica en los 3 nodos.
-
-    Flujo:
-      1. Gateway valida el archivo
-      2. Consenso clasifica con mayoría de votos
-      3. Adapter resuelve área/subárea en la jerarquía del usuario
-      4. Se replica en node1, node2, node3
-      5. Se guarda en metadatos
-    """
+                         auth: tuple = Depends(usuario_actual)):
     nombre_usuario, datos_usuario = auth
     validar_carga(archivo)
-
     areas_usuario = datos_usuario["areas"]
     areas_planas  = construir_areas_planas(areas_usuario)
 
@@ -323,7 +216,6 @@ async def cargar_archivo(archivo: UploadFile = File(...),
             os.makedirs(directorio_destino, exist_ok=True)
             shutil.copy(ruta_temporal, os.path.join(directorio_destino, archivo.filename))
             nodos_almacenados.append(nodo)
-
     finally:
         if os.path.exists(ruta_temporal):
             os.remove(ruta_temporal)
@@ -338,13 +230,11 @@ async def cargar_archivo(archivo: UploadFile = File(...),
         "version": 1
     })
     guardar_metadatos(nombre_usuario, metadatos)
-
     return adaptar_respuesta_carga(archivo.filename, area, subarea, nodos_almacenados, votos)
 
 
-@app.get("/files", tags=["documentos"])
+@router.get("/files", tags=["documentos"])
 def obtener_archivos(auth: tuple = Depends(usuario_actual)):
-    """Devuelve el árbol de clasificación de dos niveles del usuario."""
     nombre_usuario, datos_usuario = auth
     areas_usuario = datos_usuario["areas"]
     metadatos     = cargar_metadatos(nombre_usuario)
@@ -359,9 +249,7 @@ def obtener_archivos(auth: tuple = Depends(usuario_actual)):
         area    = f["area"]
         subarea = f.get("subarea", "")
         nombre  = f["name"]
-
         arbol.setdefault(area, {"files": []})
-
         if subarea:
             arbol[area].setdefault(subarea, {"files": []})
             arbol[area][subarea]["files"].append(nombre)
@@ -371,44 +259,34 @@ def obtener_archivos(auth: tuple = Depends(usuario_actual)):
     return adaptar_respuesta_archivos(nombre_usuario, arbol)
 
 
-@app.get("/download", tags=["documentos"])
+@router.get("/download", tags=["documentos"])
 def descargar_archivo(nombre_archivo: str = Query(...),
                       area: str = Query(...),
                       subarea: Optional[str] = Query(None),
                       auth: tuple = Depends(usuario_actual)):
-    """
-    Descarga un archivo intentando node1 → node2 → node3.
-    Tolerancia a fallos: si un nodo está caído prueba el siguiente.
-    """
     nombre_usuario, _ = auth
     ruta_sub = subarea if subarea else ""
-
     for nodo in NODOS:
         ruta = os.path.join(BASE_ALMACENAMIENTO, nodo, nombre_usuario, area, ruta_sub, nombre_archivo)
         if os.path.exists(ruta):
             return FileResponse(ruta, media_type="application/pdf", filename=nombre_archivo)
-
     raise HTTPException(404, "Archivo no encontrado en ningún nodo.")
 
 
-@app.delete("/document", tags=["documentos"])
+@router.delete("/document", tags=["documentos"])
 def eliminar_documento(nombre_archivo: str, area: str,
                        subarea: Optional[str] = None,
                        auth: tuple = Depends(usuario_actual)):
-    """Elimina un documento de los 3 nodos y de los metadatos del usuario."""
     nombre_usuario, _ = auth
     ruta_sub = subarea if subarea else ""
-
     eliminado_de = []
     for nodo in NODOS:
         ruta = os.path.join(BASE_ALMACENAMIENTO, nodo, nombre_usuario, area, ruta_sub, nombre_archivo)
         if os.path.exists(ruta):
             os.remove(ruta)
             eliminado_de.append(nodo)
-
     if not eliminado_de:
         raise HTTPException(404, "Archivo no encontrado en ningún nodo.")
-
     metadatos = cargar_metadatos(nombre_usuario)
     metadatos["files"] = [
         f for f in metadatos["files"]
@@ -416,7 +294,6 @@ def eliminar_documento(nombre_archivo: str, area: str,
                 and f.get("subarea", "") == (subarea or ""))
     ]
     guardar_metadatos(nombre_usuario, metadatos)
-
     return {"mensaje": f"Archivo '{nombre_archivo}' eliminado de {eliminado_de}."}
 
 
@@ -424,15 +301,8 @@ def eliminar_documento(nombre_archivo: str, area: str,
 # 4. ADMINISTRADOR
 # ══════════════════════════════════════════════════════════════════════════
 
-def obtener_admin(auth: tuple = Depends(usuario_actual)) -> tuple[str, dict]:
-    nombre_usuario, datos = auth
-    requiere_admin(datos)
-    return nombre_usuario, datos
-
-
-@app.get("/admin/users", tags=["admin"])
+@router.get("/admin/users", tags=["admin"])
 def listar_usuarios(auth: tuple = Depends(obtener_admin)):
-    """Lista todos los usuarios con su rol (sin mostrar hashes ni tokens)."""
     usuarios = cargar_usuarios()
     return {
         u: {"rol": d["role"], "areas": list(d["areas"].keys())}
@@ -440,18 +310,15 @@ def listar_usuarios(auth: tuple = Depends(obtener_admin)):
     }
 
 
-@app.post("/admin/users", tags=["admin"])
+@router.post("/admin/users", tags=["admin"])
 def admin_crear_usuario(nombre_usuario: str, contrasena: str,
                         rol: str = "user",
                         auth: tuple = Depends(obtener_admin)):
-    """Crea un usuario (el admin puede asignar rol). Roles válidos: 'user', 'admin'."""
     if rol not in ("user", "admin"):
         raise HTTPException(400, "Rol inválido. Usa 'user' o 'admin'.")
-
     usuarios = cargar_usuarios()
     if nombre_usuario in usuarios:
         raise HTTPException(400, "El nombre de usuario ya existe.")
-
     usuarios[nombre_usuario] = {
         "password_hash": hashear_contrasena(contrasena),
         "role":          rol,
@@ -462,86 +329,67 @@ def admin_crear_usuario(nombre_usuario: str, contrasena: str,
     return {"mensaje": f"Usuario '{nombre_usuario}' creado con rol '{rol}'."}
 
 
-@app.delete("/admin/users/{nombre_usuario}", tags=["admin"])
+@router.delete("/admin/users/{nombre_usuario}", tags=["admin"])
 def admin_eliminar_usuario(nombre_usuario: str, auth: tuple = Depends(obtener_admin)):
-    """Elimina un usuario y todos sus archivos en los 3 nodos. No puedes eliminarte a ti mismo."""
     usuario_admin, _ = auth
     if nombre_usuario == usuario_admin:
         raise HTTPException(400, "No puedes eliminar tu propia cuenta.")
-
     usuarios = cargar_usuarios()
     if nombre_usuario not in usuarios:
         raise HTTPException(404, "Usuario no encontrado.")
-
     for nodo in NODOS:
-        directorio_usuario = os.path.join(BASE_ALMACENAMIENTO, nodo, nombre_usuario)
-        if os.path.exists(directorio_usuario):
-            shutil.rmtree(directorio_usuario)
-
+        dir_usuario = os.path.join(BASE_ALMACENAMIENTO, nodo, nombre_usuario)
+        if os.path.exists(dir_usuario):
+            shutil.rmtree(dir_usuario)
     archivo_meta = os.path.join(RUTA_METADATOS, f"{nombre_usuario}.json")
     if os.path.exists(archivo_meta):
         os.remove(archivo_meta)
-
     del usuarios[nombre_usuario]
     guardar_usuarios(usuarios)
     return {"mensaje": f"Usuario '{nombre_usuario}' eliminado."}
 
 
-@app.put("/admin/users/{nombre_usuario}", tags=["admin"])
+@router.put("/admin/users/{nombre_usuario}", tags=["admin"])
 def admin_actualizar_usuario(nombre_usuario: str,
                              nuevo_nombre_usuario: Optional[str] = None,
                              nueva_contrasena: Optional[str] = None,
                              nuevo_rol: Optional[str] = None,
                              auth: tuple = Depends(obtener_admin)):
-    """Modifica nombre, contraseña y/o rol de cualquier cuenta."""
     if not nuevo_nombre_usuario and not nueva_contrasena and not nuevo_rol:
         raise HTTPException(400, "Debes proporcionar al menos un campo a actualizar.")
-
     usuarios = cargar_usuarios()
     if nombre_usuario not in usuarios:
         raise HTTPException(404, "Usuario no encontrado.")
-
     if nuevo_nombre_usuario and nuevo_nombre_usuario != nombre_usuario:
         if nuevo_nombre_usuario in usuarios:
             raise HTTPException(400, "El nuevo nombre de usuario ya existe.")
-
         usuarios[nuevo_nombre_usuario] = usuarios.pop(nombre_usuario)
-
         for nodo in NODOS:
             dir_antiguo = os.path.join(BASE_ALMACENAMIENTO, nodo, nombre_usuario)
             dir_nuevo   = os.path.join(BASE_ALMACENAMIENTO, nodo, nuevo_nombre_usuario)
             if os.path.exists(dir_antiguo):
                 os.rename(dir_antiguo, dir_nuevo)
-
         meta_antiguo = os.path.join(RUTA_METADATOS, f"{nombre_usuario}.json")
         meta_nuevo   = os.path.join(RUTA_METADATOS, f"{nuevo_nombre_usuario}.json")
         if os.path.exists(meta_antiguo):
             os.rename(meta_antiguo, meta_nuevo)
-
         nombre_usuario = nuevo_nombre_usuario
-
     if nueva_contrasena:
         if len(nueva_contrasena) < 6:
             raise HTTPException(400, "La contraseña debe tener al menos 6 caracteres.")
         usuarios[nombre_usuario]["password_hash"] = hashear_contrasena(nueva_contrasena)
         usuarios[nombre_usuario]["session_token"] = None
-
     if nuevo_rol:
         if nuevo_rol not in ("user", "admin"):
             raise HTTPException(400, "Rol inválido. Usa 'user' o 'admin'.")
         usuarios[nombre_usuario]["role"] = nuevo_rol
-
     guardar_usuarios(usuarios)
     return {"mensaje": "Usuario actualizado correctamente.", "nombre_usuario": nombre_usuario}
 
 
-@app.delete("/admin/areas/{nombre_usuario}/{area}", tags=["admin"])
+@router.delete("/admin/areas/{nombre_usuario}/{area}", tags=["admin"])
 def admin_eliminar_area(nombre_usuario: str, area: str,
                         auth: tuple = Depends(obtener_admin)):
-    """
-    Elimina una temática de cualquier usuario AUNQUE NO ESTÉ VACÍA.
-    Los documentos dentro se mueven a 'General'.
-    """
     usuarios = cargar_usuarios()
     if nombre_usuario not in usuarios:
         raise HTTPException(404, "Usuario no encontrado.")
@@ -549,35 +397,28 @@ def admin_eliminar_area(nombre_usuario: str, area: str,
         raise HTTPException(400, "No se puede eliminar 'General'.")
     if area not in usuarios[nombre_usuario]["areas"]:
         raise HTTPException(404, f"El área '{area}' no existe para '{nombre_usuario}'.")
-
     metadatos = cargar_metadatos(nombre_usuario)
-
     for f in metadatos["files"]:
         if f["area"] == area:
             subarea_antiguo = f.get("subarea", "")
             for nodo in NODOS:
-                ruta_antigua  = os.path.join(BASE_ALMACENAMIENTO, nodo, nombre_usuario,
-                                             area, subarea_antiguo, f["name"])
-                dir_nuevo     = os.path.join(BASE_ALMACENAMIENTO, nodo, nombre_usuario, "General")
+                ruta_antigua = os.path.join(BASE_ALMACENAMIENTO, nodo, nombre_usuario,
+                                            area, subarea_antiguo, f["name"])
+                dir_nuevo    = os.path.join(BASE_ALMACENAMIENTO, nodo, nombre_usuario, "General")
                 os.makedirs(dir_nuevo, exist_ok=True)
                 if os.path.exists(ruta_antigua):
                     shutil.move(ruta_antigua, os.path.join(dir_nuevo, f["name"]))
             f["area"]    = "General"
             f["subarea"] = ""
-
     guardar_metadatos(nombre_usuario, metadatos)
     del usuarios[nombre_usuario]["areas"][area]
     guardar_usuarios(usuarios)
     return {"mensaje": f"Área '{area}' eliminada. Documentos movidos a 'General'."}
 
 
-@app.delete("/admin/areas/{nombre_usuario}/{area}/{subarea}", tags=["admin"])
+@router.delete("/admin/areas/{nombre_usuario}/{area}/{subarea}", tags=["admin"])
 def admin_eliminar_subarea(nombre_usuario: str, area: str, subarea: str,
                            auth: tuple = Depends(obtener_admin)):
-    """
-    Elimina una subtemática de cualquier usuario AUNQUE NO ESTÉ VACÍA.
-    Los documentos dentro se mueven al área padre.
-    """
     usuarios = cargar_usuarios()
     if nombre_usuario not in usuarios:
         raise HTTPException(404, "Usuario no encontrado.")
@@ -585,9 +426,7 @@ def admin_eliminar_subarea(nombre_usuario: str, area: str, subarea: str,
         raise HTTPException(404, f"El área '{area}' no existe para '{nombre_usuario}'.")
     if subarea not in usuarios[nombre_usuario]["areas"][area]:
         raise HTTPException(404, f"La subárea '{subarea}' no existe en '{area}'.")
-
     metadatos = cargar_metadatos(nombre_usuario)
-
     for f in metadatos["files"]:
         if f["area"] == area and f.get("subarea") == subarea:
             for nodo in NODOS:
@@ -598,7 +437,6 @@ def admin_eliminar_subarea(nombre_usuario: str, area: str, subarea: str,
                 if os.path.exists(ruta_antigua):
                     shutil.move(ruta_antigua, os.path.join(dir_nuevo, f["name"]))
             f["subarea"] = ""
-
     guardar_metadatos(nombre_usuario, metadatos)
     usuarios[nombre_usuario]["areas"][area].remove(subarea)
     guardar_usuarios(usuarios)

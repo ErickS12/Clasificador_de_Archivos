@@ -1,267 +1,70 @@
-# 📚 Documentación del API Gateway
+﻿# Documentacion de Gateway
 
-## 🎯 Resumen Ejecutivo
+## Proposito
 
-El **API Gateway** es la puerta de entrada del sistema distribuido de clasificación de documentos científicos. Su rol es:
-1. **Validar** archivos antes de procesarlos
-2. **Registrar** todas las operaciones para monitoreo
-3. **Coordinar** con el módulo de consenso para distribuir trabajo a workers
+El modulo [master/gateway.py](master/gateway.py) aplica controles de entrada y observabilidad sobre la API principal.
 
----
+## Componentes
 
-## 🔍 Componentes del Gateway
+### validar_carga
 
-### 1. LoggingMiddleware (Monitoreo)
+Funcion encargada de validar archivos de entrada antes del procesamiento distribuido.
 
-```python
-class LoggingMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
-        # Registra cada solicitud con tiempo de ejecución
-```
+Validaciones clave:
 
-**¿Qué hace?**
-- Intercepta TODAS las solicitudes HTTP
-- Mide el tiempo que tarda cada request
-- Imprime un registro en consola
+- nombre de archivo presente
+- extension PDF
+- tamano permitido
 
-**Salida esperada:**
-```
-[GATEWAY] POST /upload → 200 (2.345s)
-[GATEWAY] GET /categories → 200 (0.045s)
-[GATEWAY] POST /login → 401 (0.023s)
-```
+Si la validacion falla, se devuelve HTTPException y la peticion no avanza al consenso.
 
-**¿Por qué es importante?**
-- ✅ **Debugging**: Identifica qué requests son lentos
-- ✅ **Auditoría**: Rastrea todas las operaciones
-- ✅ **Performance**: Mide tiempo de respuesta de cada endpoint
-- ✅ **Monitoreo**: Detecta patrones de error
+### LoggingMiddleware
 
----
+Middleware que registra informacion operativa por request:
 
-### 2. validar_carga() (Validación)
+- metodo HTTP
+- ruta
+- codigo de respuesta
+- latencia
 
-```python
-def validar_carga(archivo: UploadFile):
-    """Valida que archivo sea PDF y no supere 10 MB"""
-```
+Este registro facilita monitoreo y diagnostico.
 
-**Validaciones que realiza:**
+## Integracion en la aplicacion
 
-| Validación | Condición | Error |
-|---|---|---|
-| **Tipo de archivo** | ¿Es `.pdf`? | 400 (Bad Request) |
-| **Tamaño máximo** | ¿< 10 MB? | 413 (Payload Too Large) |
+El middleware se agrega en [master/main.py](master/main.py) junto con CORS y redireccion al lider.
 
-**Ejemplo de error:**
-```json
-{
-  "detail": "Solo se aceptan archivos PDF."
-}
-```
+Orden funcional:
 
-**¿Por qué es importante?**
-- ✅ **Seguridad**: Evita cargas malformadas
-- ✅ **Recursos**: No procesa archivos enormes
-- ✅ **UX**: Da mensajes de error claros al cliente
-- ✅ **Integridad**: Garantiza que solo PDFs válidos llegan a workers
+1. redireccion al lider (cuando aplica)
+2. CORS
+3. logging
+4. endpoint de negocio
 
----
+## Flujo de upload
 
-## 🔗 Integración con el Sistema Completo
+1. Cliente envia POST /upload.
+2. validar_carga revisa archivo.
+3. Si es valido, master invoca consenso.
+4. Workers devuelven clasificacion.
+5. Master calcula mayoria.
+6. Se almacena archivo y metadatos.
+7. Respuesta se adapta para cliente.
+8. LoggingMiddleware registra resultado.
 
-### Flujo de una solicitud de upload:
+## Contrato de errores
 
-```
-1. CLIENTE
-   └─ POST /upload (PDF + áreas de interés)
-      
-2. GATEWAY - LoggingMiddleware
-   └─ [GATEWAY] POST /upload → inicio
-   
-3. GATEWAY - validar_carga()
-   ├─ ¿Es .pdf? ✅
-   ├─ ¿< 10 MB? ✅
-   └─ Validación OK
-   
-4. MAIN.PY - endpoint /upload
-   ├─ Crea metadatos del documento
-   ├─ Guarda archivo en storage/nodeX
-   └─ Llama a consensus.py
-   
-5. CONSENSUS.PY
-   ├─ Envía PDF a worker 1 (localhost:5001)
-   ├─ Envía PDF a worker 2 (localhost:5002)
-   └─ Envía PDF a worker 3 (localhost:5003)
-   
-6. WORKER/MAIN.PY (3 instancias en paralelo)
-   ├─ node1: clasificador_1(PDF) → "Machine Learning"
-   ├─ node2: clasificador_2(PDF) → "Machine Learning"
-   └─ node3: clasificador_3(PDF) → "Data Science"
-   
-7. CONSENSUS.PY - Votación
-   ├─ Votos: [ML, ML, DS]
-   ├─ Ganador: "Machine Learning" (2 votos)
-   └─ Confianza: 66.7%
-   
-8. MAIN.PY - Respuesta
-   └─ Retorna clasificación + votos
-   
-9. GATEWAY - LoggingMiddleware
-   └─ [GATEWAY] POST /upload → 200 (2.345s)
-   
-10. CLIENTE
-    └─ Recibe JSON con resultado
-```
+- 400/422: entrada invalida
+- 401/403: autenticacion o permisos
+- 503: indisponibilidad de workers o lider
 
----
+## Consideraciones operativas
 
-## 📊 Herramientas Utilizadas
+- Mantener la validacion en borde evita carga innecesaria a workers.
+- El logging no debe incluir datos sensibles.
+- Ante errores de red, se recomienda incluir request-id para trazabilidad futura.
 
-| Herramienta | Uso | Línea |
-|---|---|---|
-| **FastAPI** | Framework para endpoints HTTP | `from fastapi import ...` |
-| **Starlette** | Base para middleware | `from starlette.middleware.base import ...` |
-| **Python `time`** | Medir duración | `import time` |
-| **HTTPException** | Respuestas de error | `raise HTTPException(status_code=...)` |
+## Checklist de mantenimiento
 
-### Stack Técnico Completo:
-```
-┌─────────────────────────────────────┐
-│  FastAPI (Gateway + Endpoints)      │
-├─────────────────────────────────────┤
-│  Starlette (Middleware, Request)    │
-├─────────────────────────────────────┤
-│  Uvicorn (Servidor ASGI)            │
-├─────────────────────────────────────┤
-│  Python asyncio (Programación async)│
-└─────────────────────────────────────┘
-```
-
----
-
-## 🎯 Archivos Relacionados
-
-### En `master/`
-- **gateway.py** ← Validación + Logging
-- **main.py** ← Endpoints principales (usa gateway.py)
-- **consensus.py** ← Distribuye a workers
-- **auth.py** ← Autenticación
-- **adapter.py** ← Transformación de datos
-
-### En `worker/`
-- **main.py** ← API del worker
-- **classifier.py** ← Modelo ML (TF-IDF + LogisticRegression)
-- **extractor.py** ← Extrae texto de PDFs
-- **sync.py** ← Sincronización entre nodos
-
----
-
-## 🚀 Cómo se Inicia
-
-### Terminal 1 - Master (con gateway)
-```bash
-cd master/
-uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-```
-Output:
-```
-[GATEWAY] POST /register → 200 (0.012s)
-[GATEWAY] POST /login → 200 (0.015s)
-```
-
-### Terminal 2-4 - Workers (los que reciben solicitudes del gateway)
-```bash
-cd worker/
-uvicorn main:app --host 0.0.0.0 --port 5001 --reload  # Worker 1
-uvicorn main:app --host 0.0.0.0 --port 5002 --reload  # Worker 2
-uvicorn main:app --host 0.0.0.0 --port 5003 --reload  # Worker 3
-```
-
----
-
-## 🔐 Flujo de Seguridad
-
-```
-Cliente (sin token)
-  ↓
-validar_carga() ✅ Valida tipo/tamaño
-  ↓
-auth.py ✅ Verifica token JWT
-  ↓
-Endpoint protegido
-  ↓
-LoggingMiddleware ✅ Registra operación
-```
-
----
-
-## 📈 Métricas de Performance
-
-El LoggingMiddleware permite identificar:
-
-```
-Rápidos (< 0.1s):
-  [GATEWAY] GET /categories → 200 (0.045s)
-
-Normales (0.1s - 3s):
-  [GATEWAY] POST /upload → 200 (2.345s)
-
-Lentos (> 3s):
-  [GATEWAY] POST /upload → 200 (5.678s) ⚠️
-```
-
-Si ves uploads lentos, probablemente:
-- Un worker no responde (ve consensus.py)
-- El PDF es muy grande
-- La red está congestionada
-
----
-
-## 🛠️ Cómo Modificar
-
-### Cambiar límite de tamaño:
-```python
-TAM_MAX_ARCHIVOS_MB = 20  # De 10 MB a 20 MB
-```
-
-### Agregar nuevo tipo de archivo (ej: .docx):
-```python
-if not (archivo.filename.lower().endswith(".pdf") or 
-        archivo.filename.lower().endswith(".docx")):
-    raise HTTPException(...)
-```
-
-### Desactivar logging:
-```python
-# Comentar en main.py:
-# app.add_middleware(LoggingMiddleware)
-```
-
----
-
-## ❓ Preguntas Frecuentes
-
-**P: ¿Por qué falla con "Error 413"?**  
-R: El archivo supera 10 MB. Convierte el PDF con mejor compresión.
-
-**P: ¿Dónde veo los logs?**  
-R: En la terminal donde corriste `uvicorn main:app`. Busca `[GATEWAY]`.
-
-**P: ¿Qué pasa si todos los workers están caídos?**  
-R: `consensus.py` lanza error 503. Ver el archivo consensus.py para detalles.
-
-**P: ¿El gateway valida el contenido del PDF?**  
-R: No, solo verifica extensión y tamaño. El contenido lo valida `extractor.py` en el worker.
-
----
-
-## 📝 Resumen
-
-| Componente | Función | Salida |
-|---|---|---|
-| LoggingMiddleware | Monitorea todas las solicitudes | `[GATEWAY] POST /upload → 200 (2.3s)` |
-| validar_carga() | Valida PDF + tamaño | Error 400/413 o continúa |
-| Integración | Coordina con consensus.py | Distribuye a 3 workers |
-
-El gateway es **simple pero crítico**: sin él, el sistema aceptaría cualquier archivo y no sabrías qué solicitudes son lentas.
+- Revisar limites de tamano de archivo segun capacidad de nodos.
+- Auditar formato y nivel de logs periodicamente.
+- Alinear respuestas con [master/adapter.py](master/adapter.py) para mantener consistencia.
