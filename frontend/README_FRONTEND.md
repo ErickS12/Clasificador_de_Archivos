@@ -1,107 +1,65 @@
-# Frontend — React.js
-## ESTADO: 🔲 PENDIENTE — FASE 8
+Sistema Clasificador Científico - Frontend.
 
----
+Tecnologías Utilizadas
+React 18: Biblioteca principal para la interfaz de usuario.
 
-## Stack tecnológico
+Vite: Herramienta de construcción para un desarrollo rápido y optimizado.
 
-- **React.js** — framework principal (SPA)
-- **React Router** — navegación entre vistas
-- **Axios** — llamadas HTTP al backend
-- **citation-js** — generación de citas APA 7
-- **Tailwind CSS** (sugerido) — estilos
+Tailwind CSS: Framework de CSS para el diseño estilizado y responsivo.
 
-## Instalación
+React Router DOM: Gestión de navegación entre el Login y el Dashboard.
 
-```bash
-cd frontend
-npm create vite@latest . -- --template react
-npm install
-npm install axios react-router-dom citation-js
-```
+Lucide React: Set de iconos vectoriales para una interfaz intuitiva.
 
----
+Axios: Cliente HTTP para futuras conexiones con el backend de Programación Distribuida
 
-## Pantallas a implementar
 
-### Pantalla 1 — Login / Register
-```
-TODO FASE 8:
-  - Formulario: username + password
-  - POST /register  → crear cuenta
-  - POST /auth/login → obtener token JWT
-  - Guardar token en localStorage
-  - Redirigir según rol (admin → panel admin, user → panel usuario)
-```
+Estructura del Proyecto
+Implementamos una estructura modular para separar las responsabilidades del sistema:
 
-### Pantalla 2 — Panel de Usuario
-```
-TODO FASE 8:
-  - GET /themes → mostrar árbol de 2 niveles (temáticas y subtemáticas)
-  - Botón "Nueva temática" → POST /themes
-  - Botón "Nueva subtemática" → POST /themes/{id}/sub
-  - Botón "Eliminar" en temática/subtemática vacía → DELETE /themes/{id}
-  - Botón "Subir PDF" → POST /upload (con token en header)
-  - Para cada archivo: botón "Descargar" y "Eliminar"
-  - Checkbox en archivos para selección múltiple (para APA 7)
-```
+Plaintext
+src/
+├── components/   # Piezas reutilizables (Sidebar, Navbar)
+├── pages/        # Vistas completas (Login, AdminDashboard)
+├── assets/       # Recursos estáticos (Imágenes, logos)
+├── App.jsx       # Director de rutas (Enrutador central)
+└── main.jsx      # Punto de entrada de la aplicación
 
-### Pantalla 3 — Generador APA 7
-```
-TODO FASE 8:
-  - Selección múltiple de documentos del árbol
-  - Botón "Generar referencias" → POST /apa con lista de IDs
-  - Mostrar lista de citas formateadas en APA 7
-  - Botón "Copiar al portapapeles"
+Instalación y Configuración
+Para replicar este entorno de desarrollo, se ejecutaron los siguientes comandos:
 
-  Opción alternativa (procesamiento en frontend):
-    - Extraer metadatos del PDF con pdf-parse o similar
-    - Formatear con citation-js directamente en el navegador
-    - Sin necesidad del endpoint POST /apa
-```
+Creación del proyecto:
 
-### Pantalla 4 — Panel de Administrador
-```
-TODO FASE 8:
-  - Tabla de todos los usuarios con sus roles
-  - Botón "Dar de alta" → formulario → POST /admin/users
-  - Botón "Dar de baja" → DELETE /admin/users/{id}
-  - Botón "Editar" → modal con username/password → PUT /admin/users/{id}
-  - Para cada usuario: ver su árbol de temáticas
-  - Botón "Eliminar temática" (aunque no esté vacía) → DELETE /themes/{id} con rol admin
-```
+Bash
+npm create vite@latest frontend -- --template react
+Instalación de dependencias clave:
 
----
+Bash
+npm install react-router-dom axios lucide-react
+Configuración de estilos:
+Instalación de Tailwind CSS para el diseño basado en utilidades.
 
-## Manejo del token JWT en todas las peticiones
+Avances del Proyecto
+Hasta el momento, el sistema cuenta con:
 
-```javascript
-// utils/api.js
-import axios from 'axios';
+1. Sistema de Autenticación (Login/Registro)
+Interfaz dual para inicio de sesión e inicio de registro de investigadores.
 
-const api = axios.create({
-  baseURL: 'http://localhost:8000',
-});
+Validación básica de coincidencia de contraseñas.
 
-api.interceptors.request.use(config => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
+Diseño responsivo con estados dinámicos en React.
 
-export default api;
-```
+2. Panel de Administración (Dashboard)
+Sidebar Pro: Navegación lateral con perfil de administrador y cierre de sesión.
 
----
+Navbar: Barra superior con buscador integrado y notificaciones.
 
-## Variables de entorno
+Tarjetas de Estadísticas: Visualización de total de usuarios, usuarios activos y administradores.
 
-```env
-# frontend/.env
-VITE_API_URL=http://localhost:8000
+Gestión de Usuarios: Tabla dinámica con acciones de visualización, edición, bloqueo y eliminación.
 
-# TODO FASE 7: cambiar a IP del maestro en la LAN
-# VITE_API_URL=http://192.168.1.100:8000
-```
+⚙️ Ejecución
+Para iniciar el servidor de desarrollo local:
+
+Bash
+npm run dev
