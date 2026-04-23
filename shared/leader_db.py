@@ -22,7 +22,11 @@ SQL para crear la tabla en Supabase (pegar en SQL Editor):
 """
 
 import os
+from dotenv import load_dotenv
 from supabase import create_client, Client
+
+# Cargar variables de entorno del archivo .env
+load_dotenv()
 
 SUPABASE_URL: str = os.getenv("SUPABASE_URL", "")
 SUPABASE_KEY: str = os.getenv("SUPABASE_KEY", "")
@@ -52,15 +56,17 @@ def guardar_lider(datos: dict):
     Guarda (upsert) el nuevo líder en Supabase.
 
     Parámetros:
-        datos — {"nodo_id": int, "nodo_url": str}
+        datos — {"nodo_id": int, "nodo_hostname": str, "nodo_url": str}
     """
     try:
+        hostname = datos.get("nodo_hostname", f"nodo{datos['nodo_id']}")
         db.table("lider_actual").upsert({
-            "id":       1,
-            "nodo_id":  datos["nodo_id"],
-            "nodo_url": datos["nodo_url"],
+            "id":             1,
+            "nodo_id":        datos["nodo_id"],
+            "nodo_hostname":  hostname,
+            "nodo_url":       datos["nodo_url"],
         }).execute()
-        print(f"[LEADER_DB] Líder guardado: Nodo {datos['nodo_id']}")
+        print(f"[LEADER_DB] Líder guardado: Nodo {datos['nodo_id']} ({hostname})") 
     except Exception as e:
         print(f"[LEADER_DB] Error al guardar líder: {e}")
 

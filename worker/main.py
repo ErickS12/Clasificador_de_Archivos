@@ -8,6 +8,11 @@ ESTADO:
   🔲 Startup Sync       — PENDIENTE FASE 6
 """
 
+# Cargar variables de entorno ANTES de cualquier otra importación
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.responses import RedirectResponse
 from starlette.middleware.base import BaseHTTPMiddleware

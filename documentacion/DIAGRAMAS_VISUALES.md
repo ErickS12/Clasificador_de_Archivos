@@ -23,8 +23,8 @@ Servicios compartidos
   |- shared/leader_db.py
 
 Persistencia
-  |- metadata/users.json
-  |- metadata/users/*.json
+  |- Supabase (usuarios, tokens_sesion, tematicas, subtematicas)
+  |- Supabase (documentos, nodos_almacenamiento, consenso_votos)
   |- storage/node1-node3
 ```
 
@@ -38,7 +38,7 @@ Master -> Worker2: /process
 Master -> Worker3: /process
 Workers -> Master: area predicha
 Master -> Consensus: mayoria
-Master -> Storage/Metadata: guardar
+Master -> Supabase/Storage: guardar
 Master -> Cliente: respuesta final
 ```
 

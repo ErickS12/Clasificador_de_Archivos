@@ -98,8 +98,8 @@ shared/
 
 ## 10. Persistencia y almacenamiento
 
-- [metadata/users.json](metadata/users.json): usuarios, roles y asignaciones base
-- [metadata/users](metadata/users): estructura de documentos por usuario
+- [master/database.py](master/database.py): capa de acceso a datos en Supabase
+- Supabase: usuarios, sesiones, jerarquia, documentos, votos de consenso y nodos de replicacion
 - [storage/node1](storage/node1), [storage/node2](storage/node2), [storage/node3](storage/node3): replicas de archivos
 
 ## 11. Endpoints disponibles

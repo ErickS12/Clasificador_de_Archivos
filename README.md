@@ -86,7 +86,7 @@ http://localhost:8000/docs
 2. Master valida archivo y metadatos.
 3. Master envia el PDF a workers y calcula mayoria.
 4. PDF se replica en storage/node1-node3.
-5. Metadatos se guardan por usuario en metadata/users.
+5. Metadatos y sesion se guardan en Supabase (tablas usuarios, tokens_sesion, tematicas, subtematicas, documentos, nodos_almacenamiento y consenso_votos).
 6. Si el lider cae, cualquier worker o el master puede asumir el rol, siempre que tenga el `NODO_ID` correcto y gane la eleccion Bully.
 
 ## Documentacion complementaria

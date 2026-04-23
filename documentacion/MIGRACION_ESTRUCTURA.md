@@ -28,8 +28,7 @@ clasificador-final/
 │   ├── election.py
 │   └── leader_db.py
 ├── metadata/
-│   ├── users.json
-│   └── users/
+│   └── (obsoleto: no usado para persistencia de negocio)
 ├── storage/
 │   ├── node1/
 │   ├── node2/
@@ -47,7 +46,7 @@ clasificador-final/
 - master: capa de API de negocio, seguridad y administracion.
 - worker: ejecucion de tareas de procesamiento de archivos.
 - shared: servicios reutilizables entre nodos, como liderazgo y coordinacion.
-- metadata: informacion de usuarios y metadatos de documentos.
+- metadata: carpeta legacy, sin uso en persistencia de negocio tras migracion a Supabase.
 - storage: replicas fisicas de los documentos por nodo.
 - frontend: cliente web y su configuracion de consumo de API.
 

@@ -23,6 +23,7 @@ import os
 import time
 import threading
 import requests
+import sys
 from .leader_db import (
     obtener_lider_actual,
     guardar_lider,
@@ -40,7 +41,29 @@ NODOS = [
 
 # ID de ESTE nodo — configurar por variable de entorno en cada laptop
 # Ejemplo en terminal: export NODO_ID=3
-MI_ID: int   = int(os.getenv("NODO_ID", "4"))
+#MI_ID: int   = int(os.getenv("NODO_ID", "4"))
+
+# 1. Intentar leer el ID desde las variables de entorno primero
+mi_id_env = os.getenv("NODO_ID")
+
+if mi_id_env is not None:
+    MI_ID = int(mi_id_env)
+else:
+    # 2. Si no hay variable, deducir el ID a partir del puerto de uvicorn
+    MI_ID = 4 # Valor por defecto (Master)
+    
+    if "--port" in sys.argv:
+        idx = sys.argv.index("--port")
+        puerto = sys.argv[idx + 1]
+        
+        if puerto == "5001":
+            MI_ID = 1
+        elif puerto == "5002":
+            MI_ID = 2
+        elif puerto == "5003":
+            MI_ID = 3
+        elif puerto == "8000":
+            MI_ID = 4
 MI_URL: str  = next(n["url"] for n in NODOS if n["id"] == MI_ID)
 
 # Parámetros de heartbeat
@@ -173,7 +196,11 @@ def _iniciar_eleccion():
 def _proclamarme_lider():
     """Me declaro líder, guardo en Supabase y aviso a todos."""
     global _lider_url, _yo_soy_lider
-    guardar_lider({"nodo_id": MI_ID, "nodo_url": MI_URL})
+    guardar_lider({
+        "nodo_id": MI_ID,
+        "nodo_hostname": f"nodo{MI_ID}",
+        "nodo_url": MI_URL
+    })
 
     with _lock:
         _lider_url    = MI_URL
