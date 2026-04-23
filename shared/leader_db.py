@@ -3,22 +3,6 @@ Base de Datos — Tabla lider_actual
 =====================================
 Funciones de Supabase para leer y escribir el líder activo del clúster.
 
-SQL para crear la tabla en Supabase (pegar en SQL Editor):
-
-    CREATE TABLE lider_actual (
-        id                INT PRIMARY KEY DEFAULT 1,
-        nodo_id           INT NOT NULL,
-        nodo_url          TEXT NOT NULL,
-        elegido_en        TIMESTAMPTZ DEFAULT now(),
-        ultimo_heartbeat  TIMESTAMPTZ DEFAULT now(),
-
-        -- Garantiza que siempre haya una sola fila
-        CONSTRAINT una_sola_fila CHECK (id = 1)
-    );
-
-    -- Insertar fila inicial vacía para poder hacer UPDATE después
-    INSERT INTO lider_actual (id, nodo_id, nodo_url)
-    VALUES (1, 0, '') ON CONFLICT DO NOTHING;
 """
 
 import os

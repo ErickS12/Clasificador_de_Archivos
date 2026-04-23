@@ -81,13 +81,15 @@ SUPABASE_URL=https://xxxxxxxxxxxxx.supabase.co
 SUPABASE_KEY=eyJhbGc...
 PYTHONPATH=.
 ```
+from master.database import obtener_usuario_por_nombre
 
-**IMPORTANTE**: Reemplaza los valores con los que copiaste en PASO 3.
-
-### 4.2 Verificar que pip tiene python-dotenv
-```bash
-pip install python-dotenv python-supabase
-```
+usuario = obtener_usuario_por_nombre(username)
+if usuario:
+    # Crear token y guardar en BD
+    token_id = crear_token_sesion(
+        usuario_id=usuario['id'],
+        token_hash=token_hash,
+        expira_en="2026-04-23T12:00:00Z"  # 24h desde ahora
 
 ---
 
@@ -95,25 +97,13 @@ pip install python-dotenv python-supabase
 
 ### 5.1 En master/routes.py
 
-**ANTES** (JSON):
-```python
-def cargar_usuarios():
-    with open(ARCHIVO_USUARIOS, "r") as f:
-        return json.load(f)
+El login debe consultar Supabase directamente:
 
-# En endpoint /login
-usuarios = cargar_usuarios()
-usuario = usuarios.get(username)
-```
-
-**DESPUES** (Supabase):
 ```python
 from master.database import obtener_usuario_por_nombre, crear_token_sesion
 
-# En endpoint /login
 usuario = obtener_usuario_por_nombre(username)
 if usuario:
-    # Crear token y guardar en BD
     token_id = crear_token_sesion(
         usuario_id=usuario['id'],
         token_hash=token_hash,

@@ -108,15 +108,10 @@ heartbeat_lider()
 
 ### Actualizar `master/routes.py`
 
-Necesitas cambiar de JSON a funciones Supabase:
+
+El flujo actual debe leer y escribir directamente en Supabase:
 
 ```python
-# ANTES (JSON)
-def cargar_usuarios():
-    with open(ARCHIVO_USUARIOS, "r") as f:
-        return json.load(f)
-
-# DESPUÉS (Supabase)
 from master.database import obtener_usuario_por_nombre
 
 usuario = obtener_usuario_por_nombre(username)

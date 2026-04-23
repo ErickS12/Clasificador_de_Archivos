@@ -107,20 +107,12 @@ Si ves ✓ en ambas lineas: **FELICIDADES! BD conectada correctamente.**
 
 ---
 
-## Paso 7: Actualizar Routes (es el codigo actual - opcional por ahora)
+## Paso 7: Validar Routes
 
 Archivo: `master/routes.py`
 
-Reemplaza el bloque de login:
+El login ya consulta Supabase directamente:
 
-**ANTES** (JSON):
-```python
-# cargar usuarios del archivo
-usuarios = cargar_usuarios()
-usuario = usuarios.get(username)
-```
-
-**DESPUES** (Supabase):
 ```python
 from master.database import obtener_usuario_por_nombre
 

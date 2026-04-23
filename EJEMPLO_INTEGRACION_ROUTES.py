@@ -418,9 +418,9 @@ def crear_tematica(
 """
 CAMBIOS PRINCIPALES:
 
-1. JSON -> Supabase
-   - cargar_usuarios() -> obtener_usuario_por_nombre()
-   - save_metadata() -> insertar_documento() + insertar_nodo_replicacion()
+1. Persistencia en Supabase
+    - Autenticacion, jerarquia y metadatos viven en tablas PostgreSQL
+    - Los documentos replicados se registran en nodos_almacenamiento
 
 2. Persistencia automática
    - Triggers crean tematica 'General' al registrar usuario
