@@ -9,10 +9,10 @@ PBKDF2 es un algoritmo de hashing diseñado para ser lento y resistente a ataque
 El SHA256 es la función de hashing subyacente que se utiliza para generar el hash de la contraseña.
 El salt aleatorio asegura que incluso si dos usuarios tienen la misma contraseña, sus hashes serán diferentes.
 
-- Los tokens de sesión son UUIDs guardados en users.json.
+- Los tokens de sesion son UUIDs y se almacenan en la tabla tokens_sesion en Supabase.
 
 los UUIDs (Universally Unique Identifiers) son identificadores únicos que se generan de forma aleatoria.
-Al guardar estos tokens en users.json, el sistema puede verificar la autenticidad de las solicitudes posteriores utilizando estos tokens.
+Al guardar estos tokens en base de datos, el sistema puede verificar la autenticidad de las solicitudes posteriores y controlar expiracion/revocacion.
 
 - El primer usuario registrado recibe el rol de administrador automáticamente.
 """

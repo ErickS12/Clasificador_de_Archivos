@@ -2,13 +2,20 @@
 Clasificador
 ------------
 Pipeline TF-IDF + Regresión Logística entrenado con un dataset embebido.
-Recibe una lista plana de áreas + subáreas del usuario para validar el resultado.
-Si el área predicha no coincide con ninguna del usuario → devuelve "General".
+El modelo se guarda en disco para evitar reentrenamiento en cada inicio.
+
+Recibe una lista plana de áreas y subáreas del usuario para validar el resultado.
+Si el área predicha no coincide con ninguna del usuario devuelve "General".
 """
 
+import os
+import joblib
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
+
+# Ruta donde se guardará el modelo entrenado
+MODELO_RUTA = os.path.join(os.path.dirname(__file__), "modelo_clasificador.pkl")
 
 TRAINING_DATA = [
     # IA / Machine Learning
@@ -70,14 +77,37 @@ TRAINING_DATA = [
     ("linear algebra matrix eigenvalue decomposition", "Matematicas"),
 ]
 
-textos  = [t for t, _ in TRAINING_DATA]
-etiquetas = [l for _, l in TRAINING_DATA]
 
-pipeline = Pipeline([
-    ("tfidf", TfidfVectorizer(ngram_range=(1, 2))),
-    ("clf",   LogisticRegression(max_iter=1000)),
-])
-pipeline.fit(textos, etiquetas)
+def _entrenar_modelo() -> Pipeline:
+    """Entrena el modelo y lo guarda en disco."""
+    print("[CLASSIFIER] Entrenando modelo... esto puede tomar unos segundos.")
+    textos    = [t for t, _ in TRAINING_DATA]
+    etiquetas = [l for _, l in TRAINING_DATA]
+
+    pipeline = Pipeline([
+        ("tfidf", TfidfVectorizer(ngram_range=(1, 2))),
+        ("clf",   LogisticRegression(max_iter=1000)),
+    ])
+    pipeline.fit(textos, etiquetas)
+    
+    # Guardar el modelo en disco
+    joblib.dump(pipeline, MODELO_RUTA)
+    print(f"[CLASSIFIER] Modelo guardado en {MODELO_RUTA}")
+    return pipeline
+
+
+def _cargar_modelo() -> Pipeline:
+    """Carga el modelo desde disco. Si no existe, lo entrena primero."""
+    if os.path.exists(MODELO_RUTA):
+        print(f"[CLASSIFIER] Cargando modelo desde {MODELO_RUTA}")
+        pipeline = joblib.load(MODELO_RUTA)
+    else:
+        pipeline = _entrenar_modelo()
+    return pipeline
+
+
+# Cargar el modelo al importar el módulo
+pipeline = _cargar_modelo()
 
 
 def clasificar(texto: str, areas_usuario: list[str]) -> str:
@@ -86,8 +116,8 @@ def clasificar(texto: str, areas_usuario: list[str]) -> str:
     devuelve 'General'.
 
     Parámetros:
-        texto       — texto extraído del PDF
-        areas_usuario — lista plana de áreas y subáreas del usuario
+        texto       - texto extraído del PDF
+        areas_usuario - lista plana de áreas y subáreas del usuario
 
     Retorna:
         nombre del área predicha o 'General'

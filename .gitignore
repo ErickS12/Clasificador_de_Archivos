@@ -37,3 +37,8 @@ Thumbs.db
 # Environment
 .env
 .env.local
+
+# Machine Learning Models (entrenados en tiempo de ejecución)
+*.pkl
+*.joblib
+worker/modelo_clasificador.pkl
