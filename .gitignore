@@ -37,6 +37,7 @@ Thumbs.db
 # Environment
 .env
 .env.local
+.venv/
 
 # Machine Learning Models (entrenados en tiempo de ejecución)
 *.pkl
