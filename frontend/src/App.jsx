@@ -1,24 +1,34 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 
-// 1. Importamos las "Páginas" (Vistas completas)
-// Asegúrate de que el nombre coincida exactamente con tus archivos en src/pages/
-import Login from "./pages/login"; 
+// Páginas
+import Login from "./pages/Login";
 import AdminDashboard from "./pages/AdminDashboard";
+import UserDashboard from "./pages/UserDashboard";
+import GeneradorAPA from "./pages/GeneradorAPA";
+import TemaDetalle from "./pages/TemaDetalle";
 
 function App() {
   return (
     <Router>
       <Routes>
-        {/* RUTA 1: El Login es la pantalla de inicio (http://localhost:5173/) */}
+
+        {/* Login */}
         <Route path="/" element={<Login />} />
-        
-        {/* RUTA 2: El Dashboard (http://localhost:5173/admin) */}
+
+        {/* Admin */}
         <Route path="/admin" element={<AdminDashboard />} />
 
-        {/* RUTA DE SEGURIDAD: Si el usuario escribe una ruta que no existe, 
-            lo redirigimos automáticamente al Login */}
+        {/* Usuario */}
+        <Route path="/dashboard" element={<UserDashboard />} />
+        <Route path="/generador-apa" element={<GeneradorAPA />} />
+
+        {/* Temáticas dinámicas */}
+        <Route path="/tema/:nombre" element={<TemaDetalle />} />
+
+        {/* Redirección por defecto */}
         <Route path="*" element={<Navigate to="/" />} />
+
       </Routes>
     </Router>
   );
