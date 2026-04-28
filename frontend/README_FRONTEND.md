@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 Sistema Clasificador Científico - Frontend.
 
 Tecnologías Utilizadas
@@ -64,7 +63,6 @@ Para iniciar el servidor de desarrollo local:
 
 Bash
 npm run dev
-=======
 # Frontend del Clasificador Distribuido
 
 Guia de integracion del cliente web con la API del sistema.
@@ -147,4 +145,3 @@ npm run dev
 
 - En entorno local, usar localhost
 - En LAN, configurar VITE_API_URL con la URL del nodo lider
->>>>>>> origin/main
