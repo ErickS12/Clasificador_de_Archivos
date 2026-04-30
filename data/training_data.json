@@ -1,0 +1,23 @@
+[
+  { "text": "neural network deep learning model training accuracy loss", "label": "IA" },
+  { "text": "artificial intelligence classification supervised learning", "label": "IA" },
+  { "text": "natural language processing transformer bert embeddings", "label": "IA" },
+
+  { "text": "network protocol routing topology packet transmission", "label": "Redes" },
+  { "text": "wireless sensor network bandwidth latency throughput", "label": "Redes" },
+
+  { "text": "HTTP HTTPS REST protocol request response header", "label": "Protocolos" },
+  { "text": "TCP UDP handshake flow control congestion protocol", "label": "Protocolos" },
+
+  { "text": "star mesh ring bus topology network layout", "label": "Topologias" },
+
+  { "text": "operating system kernel process thread scheduler", "label": "Sistemas Operativos" },
+
+  { "text": "distributed system consensus fault tolerance replication", "label": "Sistemas Distribuidos" },
+
+  { "text": "database SQL relational schema normalization query", "label": "Bases de Datos" },
+
+  { "text": "genomics DNA sequence protein expression cell", "label": "Biologia" },
+
+  { "text": "theorem proof algebra topology manifold differential", "label": "Matematicas" }
+]
