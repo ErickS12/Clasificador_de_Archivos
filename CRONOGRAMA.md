@@ -38,11 +38,14 @@ Estado: En curso
   - sincronizacion completa de arranque en workers
   - borrado coordinado en dos fases entre nodos
 
+Nota de estado real: estas dos partes siguen solo diseñadas, no implementadas del todo en el codigo actual.
+
 ## Bloque D: Persistencia de Dominio
 
 Estado: En curso
 
-- Persistencia operativa actual en JSON para usuarios y metadatos
+- Persistencia operativa principal en Supabase para usuarios, documentos y metadatos
+- JSON sigue usandose solo como formato de transporte en algunas peticiones y respuestas, no como persistencia de negocio
 - Persistencia de liderazgo en Supabase
 - Plan de cierre:
   - capa completa de persistencia de negocio en base de datos
@@ -78,3 +81,7 @@ Estado: Planificado
 - Completos: Bloque A, Bloque B
 - En curso: Bloque C, Bloque D, Bloque F
 - Planificados: Bloque E, Bloque G
+
+## Nota de interpretacion
+
+Este cronograma es una guia historica. Para el estado real actual del sistema, priorizar el codigo fuente y el esquema de Supabase sobre estas notas.

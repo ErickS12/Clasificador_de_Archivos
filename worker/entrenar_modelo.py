@@ -1,6 +1,9 @@
 """
 Script para entrenar y guardar el modelo de clasificación.
 
+El modelo ahora entrena con etiquetas jerárquicas para predicción
+de rutas completas (ej: "Tecnología/Inteligencia Artificial").
+
 Uso:
     python worker/entrenar_modelo.py
 
@@ -21,7 +24,7 @@ from worker.classifier import _entrenar_modelo, MODELO_RUTA
 
 def main():
     print("=" * 60)
-    print("Entrenamiento de Modelo de Clasificación")
+    print("Entrenamiento de Modelo de Clasificación Jerárquico")
     print("=" * 60)
     
     # Si el modelo existe, advertir al usuario
@@ -33,6 +36,11 @@ def main():
             return
     
     print("\n[INFO] Iniciando entrenamiento...")
+    print("[INFO] El modelo predice rutas jerárquicas:")
+    print("       - Tecnología/Inteligencia Artificial")
+    print("       - Tecnología/Redes")
+    print("       - Ciencias/Biología")
+    print("       - Etc.")
     pipeline = _entrenar_modelo()
     
     print(f"\n[EXITO] Modelo entrenado y guardado en: {MODELO_RUTA}")

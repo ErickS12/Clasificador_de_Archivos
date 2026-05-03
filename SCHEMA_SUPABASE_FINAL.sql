@@ -48,18 +48,22 @@ CREATE INDEX IF NOT EXISTS idx_tokens_hash     ON tokens_sesion(token_hash);
 CREATE INDEX IF NOT EXISTS idx_tokens_vigentes ON tokens_sesion(revocado, expira_en);
 
 
--- ── 4. TEMATICAS (nivel 1) ───────────────────────────────────────────────────
+-- ── 4. TEMATICAS (nivel 1) - CATALOGO GLOBAL DE SOLO LECTURA ──────────────────
+-- Las temáticas ya no son por usuario. Son un catálogo fijo administrado por el sistema.
+-- Los usuarios NO pueden crear ni borrar temáticas.
 CREATE TABLE IF NOT EXISTS tematicas (
     id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    usuario_id  UUID NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
-    nombre      VARCHAR(150) NOT NULL,
+    nombre      VARCHAR(150) NOT NULL UNIQUE,
     es_general  BOOLEAN NOT NULL DEFAULT FALSE,
-    creado_en   TIMESTAMPTZ NOT NULL DEFAULT now(),
-
-    CONSTRAINT uq_tematica_usuario UNIQUE (usuario_id, nombre)
+    creado_en   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX IF NOT EXISTS idx_tematicas_usuario ON tematicas(usuario_id);
+-- Insertar catálogo global fijo
+INSERT INTO tematicas (nombre, es_general) VALUES
+    ('Tecnología', FALSE),
+    ('Ciencias', FALSE),
+    ('Otros', TRUE)
+ON CONFLICT (nombre) DO NOTHING;
 
 
 -- ── 5. SUBTEMATICAS (nivel 2) ────────────────────────────────────────────────
@@ -71,6 +75,34 @@ CREATE TABLE IF NOT EXISTS subtematicas (
 
     CONSTRAINT uq_subtematica_tematica UNIQUE (tematica_id, nombre)
 );
+
+-- Insertar subcategorías del catálogo global
+-- Tecnología
+INSERT INTO subtematicas (tematica_id, nombre)
+SELECT id, 'Inteligencia Artificial' FROM tematicas WHERE nombre = 'Tecnología'
+ON CONFLICT (tematica_id, nombre) DO NOTHING;
+
+INSERT INTO subtematicas (tematica_id, nombre)
+SELECT id, 'Redes' FROM tematicas WHERE nombre = 'Tecnología'
+ON CONFLICT (tematica_id, nombre) DO NOTHING;
+
+INSERT INTO subtematicas (tematica_id, nombre)
+SELECT id, 'Bases de Datos' FROM tematicas WHERE nombre = 'Tecnología'
+ON CONFLICT (tematica_id, nombre) DO NOTHING;
+
+-- Ciencias
+INSERT INTO subtematicas (tematica_id, nombre)
+SELECT id, 'Biología' FROM tematicas WHERE nombre = 'Ciencias'
+ON CONFLICT (tematica_id, nombre) DO NOTHING;
+
+INSERT INTO subtematicas (tematica_id, nombre)
+SELECT id, 'Matemáticas' FROM tematicas WHERE nombre = 'Ciencias'
+ON CONFLICT (tematica_id, nombre) DO NOTHING;
+
+-- Otros (General)
+INSERT INTO subtematicas (tematica_id, nombre)
+SELECT id, 'General' FROM tematicas WHERE nombre = 'Otros'
+ON CONFLICT (tematica_id, nombre) DO NOTHING;
 
 CREATE INDEX IF NOT EXISTS idx_subtematicas_tematica ON subtematicas(tematica_id);
 
@@ -143,6 +175,25 @@ CREATE INDEX IF NOT EXISTS idx_votos_documento ON consenso_votos(documento_id);
 CREATE INDEX IF NOT EXISTS idx_votos_worker    ON consenso_votos(nodo_worker);
 
 
+-- ── 8.5 BORRADOS PENDIENTES (eventual consistency) ───────────────────────────
+-- Tabla para trackear archivos que fallaron en ser borrados en algunos nodos.
+-- Cuando un nodo se levanta, sincroniza contra esta tabla y limpia los huérfanos.
+CREATE TABLE IF NOT EXISTS borrados_pendientes (
+    id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    documento_id        UUID NOT NULL REFERENCES documentos(id) ON DELETE CASCADE,
+    nodo_destino        VARCHAR(50) NOT NULL,  -- 'node1', 'node2', 'node3', etc.
+    lista_archivos      JSONB NOT NULL,        -- [{"nombre_usuario":"x", "area":"y", "subarea":"z", "nombre":"f.pdf"}]
+    estado              VARCHAR(50) NOT NULL DEFAULT 'pendiente' CHECK (estado IN ('pendiente', 'completado', 'fallido')),
+    intentos_fallidos   INT NOT NULL DEFAULT 0,
+    ultimo_intento      TIMESTAMPTZ,
+    creado_en           TIMESTAMPTZ NOT NULL DEFAULT now(),
+    actualizado_en      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_borrados_pendientes_estado ON borrados_pendientes(estado);
+CREATE INDEX IF NOT EXISTS idx_borrados_pendientes_nodo   ON borrados_pendientes(nodo_destino, estado);
+
+
 -- ── 9. LIDER ACTUAL ──────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS lider_actual (
     id                 INT PRIMARY KEY DEFAULT 1,
@@ -165,23 +216,6 @@ ON CONFLICT DO NOTHING;
 -- TRIGGERS
 -- ══════════════════════════════════════════════════════════════
 
--- Al registrar un usuario, crear su tematica 'General' automaticamente
-CREATE OR REPLACE FUNCTION crear_tematica_general()
-RETURNS TRIGGER AS $$
-BEGIN
-    INSERT INTO tematicas (usuario_id, nombre, es_general)
-    VALUES (NEW.id, 'General', TRUE)
-    ON CONFLICT DO NOTHING;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-DROP TRIGGER IF EXISTS trg_crear_general ON usuarios;
-CREATE TRIGGER trg_crear_general
-AFTER INSERT ON usuarios
-FOR EACH ROW EXECUTE FUNCTION crear_tematica_general();
-
-
 -- Al actualizar lider_actual, refrescar ultimo_heartbeat automaticamente
 CREATE OR REPLACE FUNCTION actualizar_heartbeat()
 RETURNS TRIGGER AS $$
@@ -201,7 +235,7 @@ FOR EACH ROW EXECUTE FUNCTION actualizar_heartbeat();
 -- VISTAS
 -- ══════════════════════════════════════════════════════════════
 
--- Arbol de clasificacion por usuario con conteo de documentos
+-- Arbol de clasificacion global con conteo de documentos por usuario
 CREATE OR REPLACE VIEW vista_arbol_usuario AS
 SELECT
     u.username,
@@ -212,9 +246,10 @@ SELECT
     s.nombre     AS subtematica,
     COUNT(d.id)  AS total_documentos
 FROM usuarios u
-JOIN tematicas    t ON t.usuario_id = u.id
+CROSS JOIN tematicas t
 LEFT JOIN subtematicas s ON s.tematica_id = t.id
-LEFT JOIN documentos   d ON d.tematica_id = t.id
+LEFT JOIN documentos d ON d.usuario_id = u.id
+    AND d.tematica_id = t.id
     AND (d.subtematica_id = s.id OR (s.id IS NULL AND d.subtematica_id IS NULL))
     AND d.estado = 'activo'
 GROUP BY u.username, t.id, t.nombre, t.es_general, s.id, s.nombre;

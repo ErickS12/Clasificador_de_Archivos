@@ -1,9 +1,13 @@
 """
-Consenso por Mayoría
-El consenso por mayoría es un método de clasificación que se basa en la idea de que la decisión final se toma en función de la opción que reciba más votos. En este caso, cada worker procesa el PDF y devuelve un área predicha. El master recopila estas predicciones y determina cuál es la más común entre ellas.
+Consenso por Mayoría - Versión Jerárquica
+========================================
+El consenso por mayoría ahora trabaja con rutas jerárquicas completas.
+Cada worker predice una ruta (ej: "Tecnología/Inteligencia Artificial").
+El maestro recopila estas predicciones y determina cuál es la más común.
 
+Si no hay consenso o los workers fallan, se asigna automáticamente "Otros/General".
 
-El concenso por ahora ya esta implementado pero solo funciona en localhost. 
+El consenso por ahora ya esta implementado pero solo funciona en localhost. 
 
 Para pasar a despliegue físico en LAN, reemplazar la lista WORKERS
 con las IPs reales de cada laptop. Ejemplo:
@@ -30,14 +34,24 @@ WORKERS = [
 
 
 
-def enviar_a_worker(url_worker: str, ruta_pdf: str, areas_planas: list[str]) -> str | None:
-    """Envía el PDF a un worker. Retorna el área predicha o None si falla."""
+def enviar_a_worker(url_worker: str, ruta_pdf: str, categorias_global: list[str]) -> str | None:
+    """Envía el PDF a un worker. Retorna la ruta predicha o None si falla.
+    
+    Args:
+        url_worker - URL del endpoint /process del worker
+        ruta_pdf - ruta al archivo PDF
+        categorias_global - lista de todas las categorías disponibles
+                           (ej: ["Tecnología/IA", "Ciencias/Biología", ...])
+    
+    Returns:
+        Ruta predicha (ej: "Tecnología/Inteligencia Artificial") o None si falla
+    """
     try:
         with open(ruta_pdf, "rb") as f:
             response = requests.post(
                 url_worker,
                 files={"archivo": f},
-                data={"areas_usuario": json.dumps(areas_planas)},
+                data={"categorias_global": json.dumps(categorias_global)},
                 timeout=10
             )
         return response.json()["area"]
@@ -45,23 +59,32 @@ def enviar_a_worker(url_worker: str, ruta_pdf: str, areas_planas: list[str]) -> 
         return None
 
 
-def clasificar_con_consenso(ruta_pdf: str, areas_planas: list[str]) -> tuple[str, dict]:
+def clasificar_con_consenso(ruta_pdf: str, categorias_global: list[str]) -> tuple[str, dict]:
     """
     Clasifica el PDF usando consenso de mayoría entre los workers.
+    Ahora con predicciones jerárquicas.
 
-    Retorna:
-        (área_ganadora, votos_por_nodo)
+    Args:
+        ruta_pdf - ruta al archivo PDF
+        categorias_global - lista de rutas jerárquicas disponibles
+
+    Returns:
+        (ruta_ganadora, votos_por_nodo)
+        
+        Ejemplos:
+            ("Tecnología/Inteligencia Artificial", {"node1": "Tecnología/IA", ...})
+            ("Otros/General", {"node1": "sin respuesta", ...})  # fallback
     """
     votos      = {}
     resultados = []
 
     for i, url in enumerate(WORKERS):
         nodo = f"node{i + 1}"
-        area = enviar_a_worker(url, ruta_pdf, areas_planas)
-        if area is not None:
-            votos[nodo] = area
-            resultados.append(area)
-            print(f"[CONSENSO] {nodo} → {area}")
+        ruta = enviar_a_worker(url, ruta_pdf, categorias_global)
+        if ruta is not None:
+            votos[nodo] = ruta
+            resultados.append(ruta)
+            print(f"[CONSENSO] {nodo} → {ruta}")
         else:
             votos[nodo] = "sin respuesta"
             print(f"[CONSENSO] {nodo} no disponible")
@@ -72,6 +95,6 @@ def clasificar_con_consenso(ruta_pdf: str, areas_planas: list[str]) -> tuple[str
             detail="Ningún worker disponible. Verifica que al menos uno esté corriendo."
         )
 
-    area_final = max(set(resultados), key=resultados.count)
-    print(f"[CONSENSO] resultado final: {area_final}")
-    return area_final, votos
+    ruta_final = max(set(resultados), key=resultados.count)
+    print(f"[CONSENSO] resultado final: {ruta_final}")
+    return ruta_final, votos

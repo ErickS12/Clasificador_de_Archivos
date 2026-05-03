@@ -4,8 +4,8 @@ Nodo Worker — API de Procesamiento
 ESTADO:
   ✅ POST /process      — extracción + clasificación
   ✅ Heartbeat + Elección de Líder — election.py
-  🔲 POST /delete-files — PENDIENTE FASE 5 (borrado en 2 pasos)
-  🔲 Startup Sync       — PENDIENTE FASE 6
+  ✅ POST /delete-files — borrado en 2 pasos
+  ✅ Startup Sync       — sincronización de pendientes (eventual consistency)
 """
 
 # Cargar variables de entorno ANTES de cualquier otra importación
@@ -13,15 +13,16 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException
-from fastapi.responses import RedirectResponse
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Body
+from fastapi.responses import RedirectResponse, JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
-import shutil, os, json
+import shutil, os, json, asyncio
 
 from .extractor import extraer_texto
 from .classifier import clasificar
 from shared.election import iniciar as iniciar_eleccion, yo_soy_lider, obtener_url_lider
+from shared.sync import sincronizar_borrados_pendientes, reintentar_borrados_periodicos
 from master.routes import router as router_maestro
 
 app = FastAPI()
@@ -86,27 +87,36 @@ async def evento_inicio():
 @app.post("/process")
 async def procesar_archivo(
     archivo: UploadFile = File(...),
-    areas_usuario: str  = Form(...)
+    categorias_global: str  = Form(...)
 ):
-    """✅ Extrae texto del PDF y clasifica con TF-IDF + LogisticRegression."""
-    areas = json.loads(areas_usuario)
+    """✅ Extrae texto del PDF y clasifica usando modelo jerárquico.
+    
+    Recibe:
+        archivo - PDF a clasificar
+        categorias_global - JSON con lista de todas las categorías disponibles
+                           Ej: ["Tecnología/Inteligencia Artificial", "Tecnología/Redes", ...]
+    
+    Devuelve:
+        {"area": "Tecnología/Inteligencia Artificial"}
+    """
+    categorias = json.loads(categorias_global)
 
     with open(RUTA_TEMP, "wb") as buf:
         shutil.copyfileobj(archivo.file, buf)
 
     texto = extraer_texto(RUTA_TEMP)
-    area  = clasificar(texto, areas)
+    area = clasificar(texto, categorias)
 
     os.remove(RUTA_TEMP)
     return {"area": area}
 
 
-# ── 🔲 PENDIENTE FASE 5 ───────────────────────────────────────────────────────
+# ── ✅ FASE 5: Borrado en 2 pasos ───────────────────────────────────────────
 
 @app.post("/delete-files")
-async def eliminar_archivos(archivos: list[dict]):
+async def eliminar_archivos(archivos: list[dict] = Body(...)):
     """
-    🔲 TODO FASE 5 — Borrado físico coordinado por el Maestro.
+    Borra archivos físicos en este nodo.
 
     Body esperado:
     [
@@ -114,10 +124,66 @@ async def eliminar_archivos(archivos: list[dict]):
       {"nombre_usuario": "erick", "area": "Redes", "subarea": "",            "nombre": "otro.pdf"}
     ]
 
-    Pasos a implementar:
-      1. Iterar la lista
-      2. Construir ruta: ALMACENAMIENTO_NODO/{nombre_usuario}/{area}/{subarea}/{nombre}
-      3. Eliminar si existe, registrar si no se encontró
-      4. Retornar {"eliminados": [...], "no_encontrados": [...]}
+    Retorna:
+      {"eliminados": [...], "no_encontrados": [...], "errores": [...]} 
     """
-    raise HTTPException(status_code=501, detail="Pendiente implementación Fase 5.")
+    eliminados: list[str] = []
+    no_encontrados: list[str] = []
+    errores: list[str] = []
+
+    for archivo in archivos:
+        nombre_usuario = archivo.get("nombre_usuario", "")
+        area = archivo.get("area", "")
+        subarea = archivo.get("subarea", "") or ""
+        nombre = archivo.get("nombre", "")
+
+        if not nombre_usuario or not area or not nombre:
+            errores.append(f"Registro invalido: {archivo}")
+            continue
+
+        ruta = os.path.join(ALMACENAMIENTO_NODO, nombre_usuario, area, subarea, nombre)
+        if os.path.exists(ruta):
+            try:
+                os.remove(ruta)
+                eliminados.append(ruta)
+            except Exception as exc:
+                errores.append(f"No se pudo borrar {ruta}: {exc}")
+        else:
+            no_encontrados.append(ruta)
+
+    status_code = 200 if not errores else 207
+    return JSONResponse(status_code=status_code, content={
+        "eliminados": eliminados,
+        "no_encontrados": no_encontrados,
+        "errores": errores,
+    })
+
+
+# ── ✅ FASE 6: Sincronización de borrados pendientes (startup) ────────────────
+
+@app.on_event("startup")
+async def sincronizar_al_iniciar():
+    """
+    Evento de startup: sincroniza los borrados pendientes de este nodo.
+    
+    Cuando el nodo se levanta, compara los archivos pendientes en la BD
+    con los archivos en su almacenamiento local y limpia los huérfanos.
+    """
+    print("[STARTUP] Iniciando sincronización de borrados pendientes...")
+    try:
+        resultado = await sincronizar_borrados_pendientes()
+        print(f"[STARTUP] Sincronización completada: {resultado}")
+    except Exception as exc:
+        print(f"[STARTUP] ⚠️ Error en sincronización: {exc}")
+
+
+@app.on_event("startup")
+async def iniciar_reintentos_periodicos():
+    """
+    Evento de startup: inicia un job periódico que reintenta borrados fallidos.
+    
+    Corre en background cada 5 minutos, intenta completar los borrados
+    que fallaron anteriormente.
+    """
+    print("[STARTUP] Iniciando job periódico de reintentos...")
+    asyncio.create_task(reintentar_borrados_periodicos(intervalo_segundos=300))

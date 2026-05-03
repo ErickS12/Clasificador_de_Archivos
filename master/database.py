@@ -119,34 +119,49 @@ def revocar_token(token_hash: str) -> bool:
         return False
 
 
-# ── TEMATICAS ────────────────────────────────────────────────────────────────
+# ── TEMATICAS - CATALOGO GLOBAL DE SOLO LECTURA ──────────────────────────────
 
 
-def obtener_tematicas_usuario(usuario_id: str) -> List[Dict[str, Any]]:
-    """Obtener todas las tematicas de un usuario (nivel 1)."""
+def obtener_catalogo_global() -> List[Dict[str, Any]]:
+    """Obtener todas las temáticas del catálogo global."""
     try:
-        response = db.table("tematicas").select("*").eq("usuario_id", usuario_id).execute()
+        response = db.table("tematicas").select("*").execute()
         return response.data if response.data else []
     except Exception as e:
-        print(f"Error obteniendo tematicas: {e}")
+        print(f"Error obteniendo catálogo global: {e}")
         return []
 
 
-def insertar_tematica(usuario_id: str, nombre: str, es_general: bool = False) -> Optional[str]:
-    """Crear nueva tematica. Retorna UUID de la tematica."""
+def obtener_categorias_globales() -> List[str]:
+    """Obtener lista de todas las categorías jerárquicas disponibles.
+    
+    Retorna: ["Tecnología/Inteligencia Artificial", "Tecnología/Redes", ...]
+    """
     try:
-        response = db.table("tematicas").insert({
-            "usuario_id": usuario_id,
-            "nombre": nombre,
-            "es_general": es_general
-        }).execute()
-        return response.data[0]["id"] if response.data else None
+        # Obtener todas las tematicas
+        tematicas = db.table("tematicas").select("id, nombre").execute()
+        categorias = []
+        
+        if tematicas.data:
+            for tematica in tematicas.data:
+                tematica_id = tematica["id"]
+                tematica_nombre = tematica["nombre"]
+                
+                # Obtener subtematicas de esta tematica
+                subtematicas = db.table("subtematicas").select("nombre").eq("tematica_id", tematica_id).execute()
+                
+                if subtematicas.data:
+                    for sub in subtematicas.data:
+                        ruta = f"{tematica_nombre}/{sub['nombre']}"
+                        categorias.append(ruta)
+        
+        return categorias
     except Exception as e:
-        print(f"Error insertando tematica: {e}")
-        return None
+        print(f"Error obteniendo categorías globales: {e}")
+        return ["Otros/General"]  # Fallback
 
 
-# ── SUBTEMATICAS ────────────────────────────────────────────────────────────
+# ── SUBTEMATICAS - CATALOGO GLOBAL DE SOLO LECTURA ────────────────────────────
 
 
 def obtener_subtematicas(tematica_id: str) -> List[Dict[str, Any]]:
@@ -159,17 +174,45 @@ def obtener_subtematicas(tematica_id: str) -> List[Dict[str, Any]]:
         return []
 
 
-def insertar_subtematica(tematica_id: str, nombre: str) -> Optional[str]:
-    """Crear nueva subtematica. Retorna UUID de la subtematica."""
+def resolver_tema_predicho(ruta_predicha: str) -> tuple[Optional[str], Optional[str]]:
+    """Resolver IDs de tematica y subtematica a partir de una ruta predicha.
+    
+    Args:
+        ruta_predicha - ruta jerárquica (ej: "Tecnología/Inteligencia Artificial")
+    
+    Returns:
+        (tematica_id, subtematica_id) o (None, None) si no existe
+        
+    Ejemplo:
+        resolver_tema_predicho("Tecnología/Inteligencia Artificial") 
+        -> ("uuid-tematica", "uuid-subtematica")
+    """
     try:
-        response = db.table("subtematicas").insert({
-            "tematica_id": tematica_id,
-            "nombre": nombre
-        }).execute()
-        return response.data[0]["id"] if response.data else None
+        # Dividir la ruta
+        partes = ruta_predicha.split("/")
+        if len(partes) != 2:
+            return None, None
+        
+        tematica_nombre, subtematica_nombre = partes
+        
+        # Buscar tematica
+        res_tematica = db.table("tematicas").select("id").eq("nombre", tematica_nombre).single().execute()
+        if not res_tematica.data:
+            return None, None
+        
+        tematica_id = res_tematica.data["id"]
+        
+        # Buscar subtematica
+        res_subtematica = db.table("subtematicas").select("id").eq("tematica_id", tematica_id).eq("nombre", subtematica_nombre).single().execute()
+        if not res_subtematica.data:
+            return None, None
+        
+        subtematica_id = res_subtematica.data["id"]
+        return tematica_id, subtematica_id
+        
     except Exception as e:
-        print(f"Error insertando subtematica: {e}")
-        return None
+        print(f"Error resolviendo tema predicho: {e}")
+        return None, None
 
 
 # ── DOCUMENTOS ───────────────────────────────────────────────────────────────

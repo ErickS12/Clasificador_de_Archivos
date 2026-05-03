@@ -14,11 +14,10 @@ from typing import Any, Optional
 from master.auth import hashear_contrasena, verificar_contrasena, generar_token, requiere_admin
 from master.gateway import validar_carga
 from master.consensus import clasificar_con_consenso
+from master.deletion_coordinator import solicitar_borrado_fisico, confirmar_y_purgar_base_datos
 from master.adapter import (
     adaptar_respuesta_carga,
     adaptar_respuesta_archivos,
-    resolver_area,
-    construir_areas_planas,
 )
 from master.database import (
     db,
@@ -28,10 +27,10 @@ from master.database import (
     crear_token_sesion,
     obtener_token,
     revocar_token,
-    obtener_tematicas_usuario,
-    insertar_tematica,
+    obtener_catalogo_global,
+    obtener_categorias_globales,
     obtener_subtematicas,
-    insertar_subtematica,
+    resolver_tema_predicho,
     insertar_documento,
     obtener_documentos_usuario,
     actualizar_documento_clasificacion,
@@ -84,59 +83,6 @@ def _es_primer_usuario() -> bool:
     return not bool(res.data)
 
 
-def _catalogo_areas_usuario(usuario_id: str) -> dict[str, Any]:
-    tematicas = obtener_tematicas_usuario(usuario_id)
-
-    areas: dict[str, list[str]] = {}
-    tematicas_por_nombre: dict[str, dict[str, Any]] = {}
-    tematicas_por_id: dict[str, dict[str, Any]] = {}
-    subtematicas_por_llave: dict[tuple[str, str], dict[str, Any]] = {}
-    subtematicas_por_id: dict[str, dict[str, Any]] = {}
-
-    for tematica in tematicas:
-        t_id = tematica["id"]
-        t_nombre = tematica["nombre"]
-        tematicas_por_nombre[t_nombre] = tematica
-        tematicas_por_id[t_id] = tematica
-
-        subtematicas = obtener_subtematicas(t_id)
-        areas[t_nombre] = [s["nombre"] for s in subtematicas]
-
-        for sub in subtematicas:
-            subtematicas_por_llave[(t_id, sub["nombre"])] = sub
-            subtematicas_por_id[sub["id"]] = sub
-
-    if "General" not in areas:
-        areas["General"] = []
-
-    return {
-        "areas": areas,
-        "tematicas_por_nombre": tematicas_por_nombre,
-        "tematicas_por_id": tematicas_por_id,
-        "subtematicas_por_llave": subtematicas_por_llave,
-        "subtematicas_por_id": subtematicas_por_id,
-    }
-
-
-def _resolver_ids_area(
-    usuario_id: str,
-    area: str,
-    subarea: Optional[str] = None,
-) -> tuple[dict[str, Any], Optional[dict[str, Any]]]:
-    catalogo = _catalogo_areas_usuario(usuario_id)
-    tematica = catalogo["tematicas_por_nombre"].get(area)
-    if not tematica:
-        raise HTTPException(404, f"El area '{area}' no existe.")
-
-    subtematica = None
-    if subarea:
-        subtematica = catalogo["subtematicas_por_llave"].get((tematica["id"], subarea))
-        if not subtematica:
-            raise HTTPException(404, f"La subarea '{subarea}' no existe en '{area}'.")
-
-    return tematica, subtematica
-
-
 def _obtener_documento_activo(
     usuario_id: str,
     nombre_archivo: str,
@@ -181,13 +127,15 @@ def usuario_actual(autorizacion: str = Header(...)) -> tuple[str, dict[str, Any]
         raise HTTPException(401, "Usuario inactivo o inexistente.")
 
     rol = _rol_nombre_por_id(usuario["rol_id"])
-    catalogo = _catalogo_areas_usuario(usuario["id"])
+    
+    # Obtener catálogo global (ya no por usuario)
+    categorias_globales = obtener_categorias_globales()
 
     return usuario["username"], {
         "id": usuario["id"],
         "username": usuario["username"],
         "role": rol,
-        "areas": catalogo["areas"],
+        "categorias_globales": categorias_globales,
         "token": token,
     }
 
@@ -255,131 +203,68 @@ def cerrar_sesion(auth: tuple = Depends(usuario_actual)):
 
 @router.get("/categories", tags=["areas"])
 def obtener_categorias(auth: tuple = Depends(usuario_actual)):
+    """Obtener el catálogo global de categorías (solo lectura).
+    
+    Los usuarios NO pueden crear ni borrar categorías.
+    El catálogo es fijo y administrado por el sistema.
+    """
     _, datos = auth
-    return {"areas": datos["areas"]}
+    return {
+        "mensaje": "Catálogo global de categorías",
+        "categorias_globales": datos["categorias_globales"]
+    }
 
+# ELIMINADO: Los usuarios ya no pueden crear ni borrar categorías.
+# El catálogo es global y de solo lectura.
+# Endpoints removidos:
+#   - POST /areas (crear área)
+#   - POST /areas/{area}/sub (crear subárea)
+#   - DELETE /areas/{area} (eliminar área)
+#   - DELETE /areas/{area}/sub/{subarea} (eliminar subárea)
 
-@router.post("/areas", tags=["areas"])
-def crear_area(area: str, auth: tuple = Depends(usuario_actual)):
-    _, datos = auth
-
-    if area == "General":
-        raise HTTPException(400, "'General' es un area reservada del sistema.")
-
-    tematica_existente = (
-        db.table("tematicas")
-        .select("id")
-        .eq("usuario_id", datos["id"])
-        .eq("nombre", area)
-        .limit(1)
-        .execute()
-    )
-    if tematica_existente.data:
-        raise HTTPException(400, f"El area '{area}' ya existe.")
-
-    nueva_tematica = insertar_tematica(datos["id"], area, es_general=False)
-    if not nueva_tematica:
-        raise HTTPException(500, "No se pudo crear el area.")
-
-    return {"mensaje": f"Area '{area}' creada."}
-
-
-@router.post("/areas/{area}/sub", tags=["areas"])
-def crear_subarea(area: str, subarea: str, auth: tuple = Depends(usuario_actual)):
-    _, datos = auth
-    tematica, _ = _resolver_ids_area(datos["id"], area)
-
-    sub_existente = (
-        db.table("subtematicas")
-        .select("id")
-        .eq("tematica_id", tematica["id"])
-        .eq("nombre", subarea)
-        .limit(1)
-        .execute()
-    )
-    if sub_existente.data:
-        raise HTTPException(400, f"La subarea '{subarea}' ya existe en '{area}'.")
-
-    nueva_sub = insertar_subtematica(tematica["id"], subarea)
-    if not nueva_sub:
-        raise HTTPException(500, "No se pudo crear la subarea.")
-
-    return {"mensaje": f"Subarea '{subarea}' creada en '{area}'."}
-
-
-@router.delete("/areas/{area}", tags=["areas"])
-def eliminar_area(area: str, auth: tuple = Depends(usuario_actual)):
-    _, datos = auth
-    if area == "General":
-        raise HTTPException(400, "No se puede eliminar el area 'General'.")
-
-    tematica, _ = _resolver_ids_area(datos["id"], area)
-
-    docs = (
-        db.table("documentos")
-        .select("id")
-        .eq("usuario_id", datos["id"])
-        .eq("tematica_id", tematica["id"])
-        .eq("estado", "activo")
-        .limit(1)
-        .execute()
-    )
-    if docs.data:
-        raise HTTPException(400, f"El area '{area}' contiene documentos. Eliminalos primero.")
-
-    db.table("tematicas").delete().eq("id", tematica["id"]).execute()
-    return {"mensaje": f"Area '{area}' eliminada."}
-
-
-@router.delete("/areas/{area}/sub/{subarea}", tags=["areas"])
-def eliminar_subarea(area: str, subarea: str, auth: tuple = Depends(usuario_actual)):
-    _, datos = auth
-    _, sub = _resolver_ids_area(datos["id"], area, subarea)
-
-    docs = (
-        db.table("documentos")
-        .select("id")
-        .eq("usuario_id", datos["id"])
-        .eq("subtematica_id", sub["id"])
-        .eq("estado", "activo")
-        .limit(1)
-        .execute()
-    )
-    if docs.data:
-        raise HTTPException(400, f"La subarea '{subarea}' contiene documentos. Eliminalos primero.")
-
-    db.table("subtematicas").delete().eq("id", sub["id"]).execute()
-    return {"mensaje": f"Subarea '{subarea}' eliminada de '{area}'."}
 
 
 @router.post("/upload", tags=["documentos"])
 async def cargar_archivo(archivo: UploadFile = File(...), auth: tuple = Depends(usuario_actual)):
+    """Cargar un archivo. Se clasificará automáticamente usando el catálogo global.
+    
+    El flujo es:
+    1. Recibir archivo PDF del usuario
+    2. Enviar a workers con catálogo global
+    3. Consenso devuelve ruta predicha (ej: "Tecnología/Inteligencia Artificial")
+    4. Validar que existe en catálogo
+    5. Si no existe → asignar "Otros/General" automáticamente
+    6. Guardar documento con IDs del catálogo y user_id del usuario
+    """
     nombre_usuario, datos = auth
     validar_carga(archivo)
 
-    catalogo = _catalogo_areas_usuario(datos["id"])
-    areas_usuario = catalogo["areas"]
-    areas_planas = construir_areas_planas(areas_usuario)
+    # Obtener catálogo global
+    categorias_globales = datos["categorias_globales"]
+    if not categorias_globales:
+        raise HTTPException(500, "Catálogo global vacío. Contacta al administrador.")
 
     ruta_temporal = f"temp_{nombre_usuario}_{archivo.filename}"
     with open(ruta_temporal, "wb") as buf:
         shutil.copyfileobj(archivo.file, buf)
 
     try:
-        predicho, votos = clasificar_con_consenso(ruta_temporal, areas_planas)
-        area, subarea = resolver_area(predicho, areas_usuario)
+        # Clasificar con consenso (ahora recibe catálogo global)
+        ruta_predicha, votos = clasificar_con_consenso(ruta_temporal, categorias_globales)
+        
+        # Validar que la ruta predicha existe en catálogo
+        tematica_id, subtematica_id = resolver_tema_predicho(ruta_predicha)
+        
+        # Si no existe, asignar fallback a "Otros/General"
+        if tematica_id is None:
+            print(f"[UPLOAD] Ruta predicha '{ruta_predicha}' no existe en catálogo. Asignando fallback 'Otros/General'")
+            ruta_predicha = "Otros/General"
+            tematica_id, subtematica_id = resolver_tema_predicho(ruta_predicha)
+            
+            if tematica_id is None:
+                raise HTTPException(500, "No se puede resolver 'Otros/General' en catálogo. Contacta al administrador.")
 
-        tematica = catalogo["tematicas_por_nombre"].get(area)
-        if not tematica:
-            raise HTTPException(500, f"No existe la tematica destino '{area}' en base de datos.")
-
-        subtematica_id = None
-        if subarea:
-            sub = catalogo["subtematicas_por_llave"].get((tematica["id"], subarea))
-            if not sub:
-                raise HTTPException(500, f"No existe la subarea destino '{subarea}' en base de datos.")
-            subtematica_id = sub["id"]
-
+        # Calcular hash del archivo
         hash_archivo = hashlib.sha256()
         with open(ruta_temporal, "rb") as f_hash:
             for chunk in iter(lambda: f_hash.read(8192), b""):
@@ -387,9 +272,11 @@ async def cargar_archivo(archivo: UploadFile = File(...), auth: tuple = Depends(
 
         tamano_bytes = os.path.getsize(ruta_temporal)
 
+        # Insertar documento con IDs del catálogo global
+        # IMPORTANTE: usuario_id va en el documento para que solo ese usuario lo vea
         documento_id = insertar_documento(
             usuario_id=datos["id"],
-            tematica_id=tematica["id"],
+            tematica_id=tematica_id,
             nombre_archivo=archivo.filename,
             hash_archivo=hash_archivo.hexdigest(),
             tamano_bytes=tamano_bytes,
@@ -398,14 +285,17 @@ async def cargar_archivo(archivo: UploadFile = File(...), auth: tuple = Depends(
         if not documento_id:
             raise HTTPException(500, "No se pudo registrar el documento en base de datos.")
 
+        # Replicar en nodos de almacenamiento
         nodos_almacenados: list[str] = []
+        area_nombre, subarea_nombre = ruta_predicha.split("/")
+        
         for nodo in NODOS:
             directorio_destino = os.path.join(
                 BASE_ALMACENAMIENTO,
                 nodo,
                 nombre_usuario,
-                area,
-                subarea if subarea else "",
+                area_nombre,
+                subarea_nombre if subarea_nombre else "",
             )
             os.makedirs(directorio_destino, exist_ok=True)
 
@@ -415,16 +305,19 @@ async def cargar_archivo(archivo: UploadFile = File(...), auth: tuple = Depends(
 
             insertar_nodo_replicacion(documento_id, nodo, ruta_destino)
 
+        # Registrar votos del consenso
         votos_validos = [v for v in votos.values() if v != "sin respuesta"]
-        for nodo, area_predicha in votos.items():
-            if area_predicha == "sin respuesta":
+        for nodo, ruta_voto in votos.items():
+            if ruta_voto == "sin respuesta":
                 continue
-            insertar_voto_consenso(documento_id, nodo, area_predicha, 0.0)
+            insertar_voto_consenso(documento_id, nodo, ruta_voto, 0.0)
 
+        # Calcular confianza basada en consenso
         confianza = 0.0
         if votos_validos:
-            confianza = round(votos_validos.count(predicho) / len(votos_validos), 2)
+            confianza = round(votos_validos.count(ruta_predicha) / len(votos_validos), 2)
 
+        # Actualizar documento con clasificación final
         if subtematica_id:
             actualizar_documento_clasificacion(documento_id, subtematica_id, confianza)
         else:
@@ -435,7 +328,7 @@ async def cargar_archivo(archivo: UploadFile = File(...), auth: tuple = Depends(
                 }
             ).eq("id", documento_id).execute()
 
-        return adaptar_respuesta_carga(archivo.filename, area, subarea, nodos_almacenados, votos)
+        return adaptar_respuesta_carga(archivo.filename, area_nombre, subarea_nombre, nodos_almacenados, votos)
     finally:
         if os.path.exists(ruta_temporal):
             os.remove(ruta_temporal)
@@ -443,35 +336,50 @@ async def cargar_archivo(archivo: UploadFile = File(...), auth: tuple = Depends(
 
 @router.get("/files", tags=["documentos"])
 def obtener_archivos(auth: tuple = Depends(usuario_actual)):
+    """Obtener estructura de archivos del usuario clasificados en el catálogo global."""
     nombre_usuario, datos = auth
 
-    catalogo = _catalogo_areas_usuario(datos["id"])
-    arbol: dict[str, Any] = {}
-    for area, subareas in catalogo["areas"].items():
-        arbol[area] = {"files": []}
-        for sub in subareas:
-            arbol[area][sub] = {"files": []}
+    # Obtener catálogo global
+    catalogo_global = obtener_catalogo_global()
+    if not catalogo_global:
+        return adaptar_respuesta_archivos(nombre_usuario, {})
 
+    # Construir árbol del catálogo global
+    arbol: dict[str, Any] = {}
+    for tematica in catalogo_global:
+        tematica_id = tematica["id"]
+        tematica_nombre = tematica["nombre"]
+        arbol[tematica_nombre] = {"files": []}
+        
+        # Obtener subtematicas
+        subtematicas = obtener_subtematicas(tematica_id)
+        for sub in subtematicas:
+            arbol[tematica_nombre][sub["nombre"]] = {"files": []}
+
+    # Llenar árbol con documentos del usuario
     documentos = obtener_documentos_usuario(datos["id"])
     for doc in documentos:
-        area_obj = catalogo["tematicas_por_id"].get(doc["tematica_id"])
-        if not area_obj:
+        # Obtener tematica
+        tematica_res = db.table("tematicas").select("nombre").eq("id", doc["tematica_id"]).single().execute()
+        if not tematica_res.data:
             continue
-
-        area_nombre = area_obj["nombre"]
-        sub_id = doc.get("subtematica_id")
+        
+        area_nombre = tematica_res.data["nombre"]
+        
+        # Obtener subtematica si existe
         sub_nombre = ""
-        if sub_id:
-            sub_obj = catalogo["subtematicas_por_id"].get(sub_id)
-            sub_nombre = sub_obj["nombre"] if sub_obj else ""
+        if doc.get("subtematica_id"):
+            sub_res = db.table("subtematicas").select("nombre").eq("id", doc["subtematica_id"]).single().execute()
+            if sub_res.data:
+                sub_nombre = sub_res.data["nombre"]
 
-        arbol.setdefault(area_nombre, {"files": []})
-
-        if sub_nombre:
-            arbol[area_nombre].setdefault(sub_nombre, {"files": []})
-            arbol[area_nombre][sub_nombre]["files"].append(doc["nombre_archivo"])
-        else:
-            arbol[area_nombre]["files"].append(doc["nombre_archivo"])
+        # Agregar archivo al árbol
+        if area_nombre in arbol:
+            if sub_nombre:
+                if sub_nombre in arbol[area_nombre]:
+                    arbol[area_nombre][sub_nombre]["files"].append(doc["nombre_archivo"])
+            else:
+                arbol[area_nombre]["files"].append(doc["nombre_archivo"])
 
     return adaptar_respuesta_archivos(nombre_usuario, arbol)
 
@@ -483,24 +391,48 @@ def descargar_archivo(
     subarea: Optional[str] = Query(None),
     auth: tuple = Depends(usuario_actual),
 ):
+    """Descargar un archivo del usuario."""
     nombre_usuario, datos = auth
-    tematica, subtematica = _resolver_ids_area(datos["id"], area, subarea)
 
-    documento = _obtener_documento_activo(
-        datos["id"],
-        nombre_archivo,
-        tematica["id"],
-        subtematica["id"] if subtematica else None,
+    # Buscar documento del usuario con esos parámetros
+    query = (
+        db.table("documentos")
+        .select("id, tematica_id, subtematica_id, nombre_archivo")
+        .eq("usuario_id", datos["id"])
+        .eq("nombre_archivo", nombre_archivo)
+        .eq("estado", "activo")
     )
-    if not documento:
-        raise HTTPException(404, "Documento no encontrado en base de datos.")
 
+    # Obtener tematica_id del área
+    tematica_res = db.table("tematicas").select("id").eq("nombre", area).single().execute()
+    if not tematica_res.data:
+        raise HTTPException(404, f"Área '{area}' no encontrada.")
+    
+    query = query.eq("tematica_id", tematica_res.data["id"])
+
+    # Si se especifica subárea, filtrar por ella
+    if subarea:
+        subtematica_res = db.table("subtematicas").select("id").eq("tematica_id", tematica_res.data["id"]).eq("nombre", subarea).single().execute()
+        if not subtematica_res.data:
+            raise HTTPException(404, f"Subárea '{subarea}' no encontrada.")
+        query = query.eq("subtematica_id", subtematica_res.data["id"])
+    else:
+        query = query.is_("subtematica_id", "null")
+
+    res = query.limit(1).execute()
+    if not res.data:
+        raise HTTPException(404, "Documento no encontrado.")
+
+    documento = res.data[0]
     nodos = obtener_nodos_documento(documento["id"])
+    
+    # Intentar obtener del primer nodo disponible
     for nodo in nodos:
         ruta = nodo.get("ruta_fisica")
         if ruta and os.path.exists(ruta):
             return FileResponse(ruta, media_type="application/pdf", filename=nombre_archivo)
 
+    # Fallback: buscar en disco
     ruta_sub = subarea if subarea else ""
     for nodo in NODOS:
         ruta = os.path.join(BASE_ALMACENAMIENTO, nodo, nombre_usuario, area, ruta_sub, nombre_archivo)
@@ -517,58 +449,111 @@ def eliminar_documento(
     subarea: Optional[str] = None,
     auth: tuple = Depends(usuario_actual),
 ):
-    nombre_usuario, datos = auth
-    tematica, subtematica = _resolver_ids_area(datos["id"], area, subarea)
+    """Eliminar un documento del usuario.
 
-    documento = _obtener_documento_activo(
-        datos["id"],
-        nombre_archivo,
-        tematica["id"],
-        subtematica["id"] if subtematica else None,
+    Flujo:
+      1. Obtener el documento y sus replicas
+      2. Borrar el archivo fisico en todos los nodos
+      3. Borrar el registro del documento en Supabase
+      4. Dejar que ON DELETE CASCADE limpie replicas y votos
+    """
+    nombre_usuario, datos = auth
+
+    # Buscar documento del usuario
+    query = (
+        db.table("documentos")
+        .select("id")
+        .eq("usuario_id", datos["id"])
+        .eq("nombre_archivo", nombre_archivo)
+        .eq("estado", "activo")
     )
-    if not documento:
+
+    # Obtener tematica_id del área
+    tematica_res = db.table("tematicas").select("id").eq("nombre", area).single().execute()
+    if not tematica_res.data:
+        raise HTTPException(404, f"Área '{area}' no encontrada.")
+    
+    query = query.eq("tematica_id", tematica_res.data["id"])
+
+    # Si se especifica subárea, filtrar por ella
+    if subarea:
+        subtematica_res = db.table("subtematicas").select("id").eq("tematica_id", tematica_res.data["id"]).eq("nombre", subarea).single().execute()
+        if not subtematica_res.data:
+            raise HTTPException(404, f"Subárea '{subarea}' no encontrada.")
+        query = query.eq("subtematica_id", subtematica_res.data["id"])
+    else:
+        query = query.is_("subtematica_id", "null")
+
+    res = query.limit(1).execute()
+    if not res.data:
         raise HTTPException(404, "Documento no encontrado.")
 
-    marcar_documento_eliminando(documento["id"])
-
-    eliminado_de: list[str] = []
+    documento = res.data[0]
     nodos = obtener_nodos_documento(documento["id"])
-    for nodo in nodos:
-        ruta = nodo.get("ruta_fisica")
-        if ruta and os.path.exists(ruta):
-            os.remove(ruta)
-            eliminado_de.append(nodo.get("nodo", "desconocido"))
-            marcar_nodo_inactivo(documento["id"], nodo.get("nodo", ""))
 
-    if not eliminado_de:
+    lista_archivos: list[dict] = []
+    if nodos:
+        for nodo in nodos:
+            ruta_fisica = nodo.get("ruta_fisica") or ""
+            if not ruta_fisica:
+                continue
+            partes = ruta_fisica.replace("\\", "/").split("/")
+            if len(partes) >= 4:
+                lista_archivos.append(
+                    {
+                        "nombre_usuario": partes[-4],
+                        "area": partes[-3],
+                        "subarea": "" if partes[-2] == "" else partes[-2],
+                        "nombre": partes[-1],
+                    }
+                )
+
+    if not lista_archivos:
         ruta_sub = subarea if subarea else ""
         for nodo in NODOS:
             ruta = os.path.join(BASE_ALMACENAMIENTO, nodo, nombre_usuario, area, ruta_sub, nombre_archivo)
             if os.path.exists(ruta):
-                os.remove(ruta)
-                eliminado_de.append(nodo)
-                marcar_nodo_inactivo(documento["id"], nodo)
+                lista_archivos.append(
+                    {
+                        "nombre_usuario": nombre_usuario,
+                        "area": area,
+                        "subarea": ruta_sub,
+                        "nombre": nombre_archivo,
+                    }
+                )
 
-    if not eliminado_de:
+    if not lista_archivos:
         raise HTTPException(404, "Archivo no encontrado en ningun nodo.")
 
-    marcar_documento_eliminado(documento["id"])
-    return {"mensaje": f"Archivo '{nombre_archivo}' eliminado de {eliminado_de}."}
+    # NUEVO: Usar patrón eventual consistency (2+ de 3 = éxito)
+    resultados, nodos_fallidos = solicitar_borrado_fisico(lista_archivos)
+    resumen = confirmar_y_purgar_base_datos(documento["id"], resultados, nodos_fallidos, lista_archivos)
+
+    estado = "éxito_total" if not nodos_fallidos else "éxito_parcial"
+    return {
+        "mensaje": f"Archivo '{nombre_archivo}' eliminado (estado: {estado}).",
+        "nodos": resultados,
+        "pendientes": resumen.get("ids_pendientes", []),
+        "estado": estado,
+        "resumen": resumen,
+    }
 
 
 @router.get("/admin/users", tags=["admin"])
 def listar_usuarios(auth: tuple = Depends(obtener_admin)):
     _ = auth
     usuarios = db.table("usuarios").select("id, username, rol_id, activo").execute().data or []
+    
+    # Obtener catálogo global
+    categorias_globales = obtener_categorias_globales()
 
     respuesta = {}
     for usuario in usuarios:
         rol = _rol_nombre_por_id(usuario["rol_id"])
-        areas = [a["nombre"] for a in obtener_tematicas_usuario(usuario["id"])]
         respuesta[usuario["username"]] = {
             "rol": rol,
             "activo": usuario.get("activo", True),
-            "areas": areas,
+            "categorias_globales": categorias_globales,
         }
 
     return respuesta
@@ -671,109 +656,12 @@ def admin_actualizar_usuario(
     }
 
 
-@router.delete("/admin/areas/{nombre_usuario}/{area}", tags=["admin"])
-def admin_eliminar_area(
-    nombre_usuario: str,
-    area: str,
-    auth: tuple = Depends(obtener_admin),
-):
-    _ = auth
-
-    usuario = obtener_usuario_por_nombre(nombre_usuario)
-    if not usuario:
-        raise HTTPException(404, "Usuario no encontrado.")
-
-    if area == "General":
-        raise HTTPException(400, "No se puede eliminar 'General'.")
-
-    tematica, _ = _resolver_ids_area(usuario["id"], area)
-    general, _ = _resolver_ids_area(usuario["id"], "General")
-
-    catalogo = _catalogo_areas_usuario(usuario["id"])
-    docs = (
-        db.table("documentos")
-        .select("id, nombre_archivo, tematica_id, subtematica_id")
-        .eq("usuario_id", usuario["id"])
-        .eq("tematica_id", tematica["id"])
-        .eq("estado", "activo")
-        .execute()
-        .data
-        or []
-    )
-
-    for doc in docs:
-        sub_nombre = ""
-        if doc.get("subtematica_id"):
-            sub_obj = catalogo["subtematicas_por_id"].get(doc["subtematica_id"])
-            sub_nombre = sub_obj["nombre"] if sub_obj else ""
-
-        for nodo in NODOS:
-            ruta_origen = os.path.join(
-                BASE_ALMACENAMIENTO,
-                nodo,
-                nombre_usuario,
-                area,
-                sub_nombre,
-                doc["nombre_archivo"],
-            )
-            ruta_dest_dir = os.path.join(BASE_ALMACENAMIENTO, nodo, nombre_usuario, "General")
-            os.makedirs(ruta_dest_dir, exist_ok=True)
-            if os.path.exists(ruta_origen):
-                shutil.move(ruta_origen, os.path.join(ruta_dest_dir, doc["nombre_archivo"]))
-
-        db.table("documentos").update(
-            {
-                "tematica_id": general["id"],
-                "subtematica_id": None,
-            }
-        ).eq("id", doc["id"]).execute()
-
-    db.table("tematicas").delete().eq("id", tematica["id"]).execute()
-    return {"mensaje": f"Area '{area}' eliminada. Documentos movidos a 'General'."}
 
 
-@router.delete("/admin/areas/{nombre_usuario}/{area}/{subarea}", tags=["admin"])
-def admin_eliminar_subarea(
-    nombre_usuario: str,
-    area: str,
-    subarea: str,
-    auth: tuple = Depends(obtener_admin),
-):
-    _ = auth
-
-    usuario = obtener_usuario_por_nombre(nombre_usuario)
-    if not usuario:
-        raise HTTPException(404, "Usuario no encontrado.")
-
-    tematica, sub = _resolver_ids_area(usuario["id"], area, subarea)
-
-    docs = (
-        db.table("documentos")
-        .select("id, nombre_archivo")
-        .eq("usuario_id", usuario["id"])
-        .eq("subtematica_id", sub["id"])
-        .eq("estado", "activo")
-        .execute()
-        .data
-        or []
-    )
-
-    for doc in docs:
-        for nodo in NODOS:
-            ruta_origen = os.path.join(
-                BASE_ALMACENAMIENTO,
-                nodo,
-                nombre_usuario,
-                area,
-                subarea,
-                doc["nombre_archivo"],
-            )
-            ruta_dest_dir = os.path.join(BASE_ALMACENAMIENTO, nodo, nombre_usuario, area)
-            os.makedirs(ruta_dest_dir, exist_ok=True)
-            if os.path.exists(ruta_origen):
-                shutil.move(ruta_origen, os.path.join(ruta_dest_dir, doc["nombre_archivo"]))
-
-        db.table("documentos").update({"subtematica_id": None}).eq("id", doc["id"]).execute()
-
-    db.table("subtematicas").delete().eq("id", sub["id"]).execute()
-    return {"mensaje": f"Subarea '{subarea}' eliminada. Documentos movidos a '{area}'."}
+# ELIMINADO: Los endpoints de eliminar áreas fueron removidos porque 
+# el catálogo global de temáticas es de solo lectura y no puede ser modificado 
+# por usuarios ni administradores.
+# 
+# Endpoints removidos:
+#   - DELETE /admin/areas/{nombre_usuario}/{area}
+#   - DELETE /admin/areas/{nombre_usuario}/{area}/{subarea}

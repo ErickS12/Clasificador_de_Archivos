@@ -1,13 +1,14 @@
 """
-Adaptador de Cliente
---------------------
+Adaptador de Cliente - Versión Jerárquica Global
+--------------------------------------------------
 Transforma las respuestas internas en formato limpio para el usuario.
-Soporta la jerarquía de dos niveles (temática → subtemática).
+Ahora trabaja con catálogo global y rutas jerárquicas.
 """
 
 
 def adaptar_respuesta_carga(nombre_archivo: str, area: str, subarea: str,
                            nodos: list[str], votos: dict) -> dict:
+    """Adaptar respuesta de carga de archivo clasificado automáticamente."""
     ruta = f"{area}/{subarea}" if subarea else area
     return {
         "mensaje":      "Archivo procesado correctamente.",
@@ -24,18 +25,9 @@ def adaptar_respuesta_carga(nombre_archivo: str, area: str, subarea: str,
 
 
 def adaptar_respuesta_archivos(nombre_usuario: str, arbol: dict) -> dict:
-    """
-    Formatea el árbol de dos niveles con estadísticas.
+    """Formatea el árbol de clasificación con estadísticas.
 
-    arbol esperado:
-    {
-      "Redes": {
-        "files":   ["paper1.pdf"],
-        "Protocolos": {"files": ["paper2.pdf"]},
-        "Topologías":  {"files": []}
-      },
-      "General": {"files": ["paper3.pdf"]}
-    }
+    Ahora con rutas del catálogo global: Tecnología, Ciencias, Otros
     """
     total = 0
     for datos_area in arbol.values():
@@ -49,30 +41,3 @@ def adaptar_respuesta_archivos(nombre_usuario: str, arbol: dict) -> dict:
         "total_archivos": total,
         "clasificacion":  arbol
     }
-
-
-def resolver_area(predicho: str, areas_usuario: dict) -> tuple[str, str]:
-    """
-    Resuelve el área y subárea a partir de la predicción del clasificador
-    y la jerraquía del usuario.
-
-    areas_usuario: {"Redes": ["Protocolos", "Topologías"], "General": []}
-
-    Retorna (area, subarea). Si no hay match → ("General", "").
-    """
-    if predicho in areas_usuario:
-        return predicho, ""
-
-    for area, subareas in areas_usuario.items():
-        if predicho in subareas:
-            return area, predicho
-
-    return "General", ""
-
-
-def construir_areas_planas(areas_usuario: dict) -> list[str]:
-    """Construye lista plana de todas las áreas y subáreas para el clasificador."""
-    planas = list(areas_usuario.keys())
-    for subareas in areas_usuario.values():
-        planas.extend(subareas)
-    return list(set(planas))
