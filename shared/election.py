@@ -24,6 +24,7 @@ import time
 import threading
 import requests
 import sys
+from shared.cluster_config import obtener_nodos_cluster, obtener_url_nodo
 from .leader_db import (
     obtener_lider_actual,
     guardar_lider,
@@ -31,13 +32,7 @@ from .leader_db import (
 )
 
 # ── Configuración de nodos ──────────────────────────────────────────────────
-# TODO FASE 7: reemplazar con IPs reales de la LAN
-NODOS = [
-    {"id": 1, "url": "http://localhost:5001"},
-    {"id": 2, "url": "http://localhost:5002"},
-    {"id": 3, "url": "http://localhost:5003"},
-    {"id": 4, "url": "http://localhost:8000"},
-]
+NODOS = obtener_nodos_cluster()
 
 # ID de ESTE nodo — configurar por variable de entorno en cada laptop
 # Ejemplo en terminal: export NODO_ID=3
@@ -64,7 +59,7 @@ else:
             MI_ID = 3
         elif puerto == "8000":
             MI_ID = 4
-MI_URL: str  = next(n["url"] for n in NODOS if n["id"] == MI_ID)
+MI_URL: str  = obtener_url_nodo(MI_ID)
 
 # Parámetros de heartbeat
 INTERVALO_HEARTBEAT_SEG = 5    # cada cuántos segundos ping al líder

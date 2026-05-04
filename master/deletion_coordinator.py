@@ -42,14 +42,9 @@ from datetime import datetime
 from fastapi import HTTPException
 
 from master.database import db, obtener_nodos_documento, obtener_usuario_por_nombre
+from shared.cluster_config import obtener_nodos_cluster
 
-# IPs de workers (misma lista que consensus.py)
-# TODO FASE 7: reemplazar con IPs reales de la LAN
-WORKER_URLS = [
-    "http://localhost:5001",
-    "http://localhost:5002",
-    "http://localhost:5003",
-]
+WORKER_URLS = [nodo["url"] for nodo in obtener_nodos_cluster() if int(nodo["id"]) != 4]
 
 NODOS = ["node1", "node2", "node3"]
 MIN_WORKERS_EXITOSOS = 2  # Al menos 2 de 3 deben ser exitosos

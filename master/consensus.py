@@ -24,13 +24,9 @@ Los workers se levantan con el comando: uvicorn worker.main:app --host --port 50
 import requests
 import json
 from fastapi import HTTPException
+from shared.cluster_config import obtener_nodos_cluster
 
-# FASE 7: para que deje de funcionar en localhost, reemplazar las URLs por las IPs reales de cada laptop worker.
-WORKERS = [
-    "http://localhost:5001/process",
-    "http://localhost:5002/process",
-    "http://localhost:5003/process",
-]
+WORKERS = [f"{nodo['url']}/process" for nodo in obtener_nodos_cluster() if int(nodo["id"]) != 4]
 
 
 
