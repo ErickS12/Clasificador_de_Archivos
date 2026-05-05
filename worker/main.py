@@ -22,7 +22,7 @@ import shutil, os, json, asyncio
 from .extractor import extraer_texto
 from .classifier import clasificar
 from shared.election import iniciar as iniciar_eleccion, yo_soy_lider, obtener_url_lider
-from shared.sync import sincronizar_borrados_pendientes, reintentar_borrados_periodicos
+from shared.sync import sincronizar_borrados_pendientes
 from master.routes import router as router_maestro
 
 app = FastAPI()
@@ -76,10 +76,57 @@ async def evento_inicio():
     # Unirse al clúster y arrancar heartbeat
     iniciar_eleccion(app)
 
-    # TODO FASE 6: descomentar cuando sync.py esté implementado.
-    # from sync import ejecutar_sincronizacion_inicio
-    # await ejecutar_sincronizacion_inicio()
-    print("[WORKER] Iniciado. (Startup Sync pendiente — Fase 6)")
+    # FASE 6: Sincronización de borrados pendientes con patrón PUSH
+    # Worker notifica al Master cuando se levanta
+    asyncio.create_task(sincronizar_con_master_al_startup())
+    
+    print(f"[WORKER] Iniciado. Sincronizando borrados pendientes...")
+
+
+async def sincronizar_con_master_al_startup():
+    """
+    Al startup, notifica al master y sincroniza inmediatamente los borrados pendientes.
+    Patrón PUSH: Worker → Master (en lugar de Master → Worker cada 5 minutos)
+    """
+    import requests
+    from shared.sync import sincronizar_borrados_pendientes
+    
+    # Esperar un poquito a que el worker esté listo
+    await asyncio.sleep(1)
+    
+    try:
+        # 1. Notificar al master: "Estoy vivo"
+        url_master = os.getenv("MASTER_URL", "http://localhost:8000")
+        resp = requests.post(
+            f"{url_master}/node-startup",
+            json={"node_name": os.getenv("WORKER_NODE_NAME", "node1")},
+            timeout=5
+        )
+        
+        respuesta = resp.json()
+        borrados = respuesta.get("borrados_pendientes", [])
+        
+        # 2. Sincronizar inmediatamente con los datos del master
+        if borrados:
+            print(f"[STARTUP-SYNC] Master envió {len(borrados)} borrados pendientes")
+            resultado = await sincronizar_borrados_pendientes(lista_previa=borrados)
+            print(f"[STARTUP-SYNC] Resultado: {resultado['completados'].__len__()} completados, "
+                  f"{resultado['fallidos'].__len__()} fallidos, "
+                  f"{resultado['reintentos'].__len__()} reintentos")
+        else:
+            print(f"[STARTUP-SYNC] Sin borrados pendientes - sistema consistente")
+    
+    except requests.exceptions.Timeout:
+        print(f"[STARTUP-SYNC] Master offline (timeout) - sincronizando fallback desde BD")
+        # Fallback: sincronizar sin info del master (polling local)
+        resultado = await sincronizar_borrados_pendientes()
+        print(f"[STARTUP-SYNC] Fallback: {resultado}")
+    
+    except Exception as e:
+        print(f"[STARTUP-SYNC] Error contactando master: {e} - sincronizando fallback")
+        # Fallback: sincronizar sin info del master
+        resultado = await sincronizar_borrados_pendientes()
+        print(f"[STARTUP-SYNC] Fallback: {resultado}")
 
 
 # ── ✅ IMPLEMENTADO ───────────────────────────────────────────────────────────

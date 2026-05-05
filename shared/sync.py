@@ -39,17 +39,26 @@ def obtener_db():
     return db
 
 
-async def sincronizar_borrados_pendientes(db=None) -> dict:
+async def sincronizar_borrados_pendientes(db=None, lista_previa: list[dict] = None) -> dict:
     """
-    Sincroniza los borrados pendientes para ESTE nodo al startup.
+    Sincroniza los borrados pendientes para ESTE nodo.
+    
+    Puede funcionar de dos maneras:
+      A) Con lista_previa: Master envió archivos a borrar (patrón PUSH)
+      B) Sin lista_previa: Lee de BD todos los pendientes (patrón PULL - fallback)
     
     Flujo:
-      1. Lee todas las entradas de borrados_pendientes donde:
+      1. Si lista_previa: usa esa lista directamente
+         Si no: Lee todas las entradas de borrados_pendientes donde:
          - estado = 'pendiente'
          - nodo_destino = NOMBRE_NODO (p.ej. 'node1')
       2. Para cada una, intenta borrar el archivo del disco
       3. Marca como 'completado' si éxito, o incrementa intentos_fallidos
       4. Si intentos_fallidos > 3, marca como 'fallido'
+    
+    Args:
+        db: Instancia de Supabase (opcional)
+        lista_previa: Lista de archivos a borrar (desde Master, patrón PUSH)
     
     Retorna:
         dict con resultados: {
@@ -70,16 +79,22 @@ async def sincronizar_borrados_pendientes(db=None) -> dict:
     }
     
     try:
-        # Leer todas las entradas pendientes para este nodo
-        resp = (
-            db.table("borrados_pendientes")
-            .select("id, documento_id, lista_archivos, intentos_fallidos")
-            .eq("estado", "pendiente")
-            .eq("nodo_destino", NOMBRE_NODO)
-            .execute()
-        )
-        
-        pendientes = resp.data or []
+        # Si lista_previa viene del Master (patrón PUSH)
+        if lista_previa:
+            pendientes = lista_previa
+            print(f"[SYNC] Patrón PUSH: Master envió {len(pendientes)} borrados")
+        else:
+            # Patrón PULL: leer de BD (fallback si Master offline)
+            resp = (
+                db.table("borrados_pendientes")
+                .select("id, documento_id, lista_archivos, intentos_fallidos")
+                .eq("estado", "pendiente")
+                .eq("nodo_destino", NOMBRE_NODO)
+                .execute()
+            )
+            
+            pendientes = resp.data or []
+            print(f"[SYNC] Patrón PULL: BD tiene {len(pendientes)} borrados")
         print(f"[SYNC] {len(pendientes)} borrados pendientes para {NOMBRE_NODO}")
         
         for entrada in pendientes:

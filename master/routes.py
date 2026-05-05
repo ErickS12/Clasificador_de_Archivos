@@ -223,6 +223,57 @@ def obtener_categorias(auth: tuple = Depends(usuario_actual)):
 #   - DELETE /areas/{area}/sub/{subarea} (eliminar subárea)
 
 
+@router.post("/node-startup", tags=["cluster"])
+def node_startup(node_name: str):
+    """Endpoint para que workers notifiquen al master cuando se levantan.
+    
+    Patrón PUSH: Worker → Master (más eficiente que polling)
+    
+    Retorna los borrados pendientes para que el worker sincronice inmediatamente.
+    Si no hay pendientes, retorna lista vacía.
+    
+    Args:
+        node_name: Nombre del nodo que se levanta (ej: 'node1', 'node2', 'node3')
+    
+    Retorna:
+        {
+            "borrados_pendientes": [
+                {
+                    "id": "uuid",
+                    "lista_archivos": [{...}],
+                    "nodo_destino": "node1",
+                    "estado": "pendiente"
+                }
+            ],
+            "timestamp": "2026-05-04T10:30:45Z"
+        }
+    """
+    from master.database import db
+    
+    try:
+        # Obtener todos los borrados pendientes para este nodo
+        resp = db.table("borrados_pendientes").select(
+            "id, documento_id, lista_archivos, nodo_destino, estado"
+        ).eq("estado", "pendiente").eq("nodo_destino", node_name).execute()
+        
+        borrados_pendientes = resp.data or []
+        
+        print(f"[NODE-STARTUP] {node_name} se levantó - {len(borrados_pendientes)} borrados pendientes")
+        
+        return {
+            "mensaje": f"Node {node_name} registrado al startup",
+            "borrados_pendientes": borrados_pendientes,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }
+    except Exception as e:
+        print(f"[NODE-STARTUP] Error: {e}")
+        return {
+            "mensaje": f"Error obteniendo pendientes para {node_name}",
+            "borrados_pendientes": [],
+            "error": str(e),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }
+
 
 @router.post("/upload", tags=["documentos"])
 async def cargar_archivo(archivo: UploadFile = File(...), auth: tuple = Depends(usuario_actual)):
