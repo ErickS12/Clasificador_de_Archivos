@@ -1,49 +1,49 @@
-﻿# âœ… RESUMEN EJECUTIVO: CAMBIOS REALIZADOS
+﻿# ✅ RESUMEN EJECUTIVO: CAMBIOS REALIZADOS
 
 **Fecha:** [Hoy]  
 **Proyecto:** Clasificador de Archivos PDF  
-**Cambio Principal:** De temÃ¡ticas por usuario â†’ CatÃ¡logo global fijo
+**Cambio Principal:** De temáticas por usuario → Catálogo global fijo
 
 ---
 
-## ðŸ“Š ESTADO DE SINCRONIZACIÃ“N
+## 📊 ESTADO DE SINCRONIZACIÓN
 
 ```
-â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-â”‚ Componente                      â”‚ CÃ³digo Local â”‚ Base de Datos â”‚
-â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
-â”‚ Schema SQL                      â”‚ âœ… Updated   â”‚ â³ Pending    â”‚
-â”‚ Python API (routes.py)          â”‚ âœ… Updated   â”‚ -             â”‚
-â”‚ ML Classifier (classifier.py)   â”‚ âœ… Updated   â”‚ -             â”‚
-â”‚ Consensus System (consensus.py) â”‚ âœ… Updated   â”‚ -             â”‚
-â”‚ Database Functions (database.py)â”‚ âœ… Updated   â”‚ -             â”‚
-â”‚ Supabase Tables/Views           â”‚ âœ… Ready     â”‚ â³ Pending    â”‚
-â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+┌─────────────────────────────────┬──────────────┬──────────────┐
+│ Componente                      │ Código Local │ Base de Datos │
+├─────────────────────────────────┼──────────────┼──────────────┤
+│ Schema SQL                      │ ✅ Updated   │ ⏳ Pending    │
+│ Python API (routes.py)          │ ✅ Updated   │ -             │
+│ ML Classifier (classifier.py)   │ ✅ Updated   │ -             │
+│ Consensus System (consensus.py) │ ✅ Updated   │ -             │
+│ Database Functions (database.py)│ ✅ Updated   │ -             │
+│ Supabase Tables/Views           │ ✅ Ready     │ ⏳ Pending    │
+└─────────────────────────────────┴──────────────┴──────────────┘
 
-PRÃ“XIMO PASO: Ejecutar MIGRACION_CATALOGO_GLOBAL.sql en Supabase
+PRÓXIMO PASO: Ejecutar MIGRACION_CATALOGO_GLOBAL.sql en Supabase
 ```
 
 ---
 
-## ðŸ”§ CAMBIOS TÃ‰CNICOS REALIZADOS
+## 🔧 CAMBIOS TÉCNICOS REALIZADOS
 
 ### 1. Esquema SQL (`SCHEMA_SUPABASE_FINAL.sql`)
 
 **Tabla `tematicas`:**
-- âŒ Removido: `usuario_id` (ya no por usuario)
-- âŒ Removido: Trigger `trg_crear_general` 
-- âŒ Removido: Constraint `uq_tematica_usuario`
-- âœ… Agregado: `UNIQUE(nombre)` (catÃ¡logo global)
-- âœ… Agregado: INSERT hardcodeado con 3 categorÃ­as globales
+- ❌ Removido: `usuario_id` (ya no por usuario)
+- ❌ Removido: Trigger `trg_crear_general` 
+- ❌ Removido: Constraint `uq_tematica_usuario`
+- ✅ Agregado: `UNIQUE(nombre)` (catálogo global)
+- ✅ Agregado: INSERT hardcodeado con 3 categorías globales
 
 **Tabla `subtematicas`:**
-- âœ… Agregado: INSERT de 8 subcategorÃ­as en cascada
-- Estructura jerÃ¡rquica: `Tematica / Subtematica`
+- ✅ Agregado: INSERT de 8 subcategorías en cascada
+- Estructura jerárquica: `Tematica / Subtematica`
 
 **Vistas:**
-- âœ… Actualizada: `vista_arbol_usuario` 
+- ✅ Actualizada: `vista_arbol_usuario` 
   - Cambiado: `JOIN tematicas t ON t.usuario_id = u.id`
-  - Nuevo: `CROSS JOIN tematicas t` (mismo catÃ¡logo para todos)
+  - Nuevo: `CROSS JOIN tematicas t` (mismo catálogo para todos)
 
 ---
 
@@ -51,25 +51,25 @@ PRÃ“XIMO PASO: Ejecutar MIGRACION_CATALOGO_GLOBAL.sql en Supabase
 
 #### **`master/routes.py` - Endpoints removidos (6 total):**
 ```python
-# âŒ ANTES - Users podÃ­an crear/eliminar categorÃ­as
-POST /areas                           # Crear categorÃ­a
-POST /areas/{area}/sub                # Crear subcategorÃ­a
-DELETE /areas/{area}                  # Eliminar categorÃ­a
-DELETE /areas/{area}/sub/{subarea}    # Eliminar subcategorÃ­a
+# ❌ ANTES - Users podían crear/eliminar categorías
+POST /areas                           # Crear categoría
+POST /areas/{area}/sub                # Crear subcategoría
+DELETE /areas/{area}                  # Eliminar categoría
+DELETE /areas/{area}/sub/{subarea}    # Eliminar subcategoría
 DELETE /admin/areas/{...}             # Admin delete
 
-# âœ… AHORA - No existen, catÃ¡logo es read-only
+# ✅ AHORA - No existen, catálogo es read-only
 ```
 
 #### **`master/routes.py` - Endpoints actualizados (4 total):**
 ```python
 GET /usuario_actual
-  ANTES: {"areas": {"Mi Ãrea": ["Sub1", "Sub2"]}}
-  AHORA: {"categorias_globales": ["TecnologÃ­a/IA", "TecnologÃ­a/Redes", ...]}
+  ANTES: {"areas": {"Mi Área": ["Sub1", "Sub2"]}}
+  AHORA: {"categorias_globales": ["Tecnología/IA", "Tecnología/Redes", ...]}
 
 GET /categories
-  ANTES: DevolvÃ­a categorÃ­as del usuario
-  AHORA: Devuelve catÃ¡logo global READ-ONLY
+  ANTES: Devolvía categorías del usuario
+  AHORA: Devuelve catálogo global READ-ONLY
 
 GET /files
 POST /upload
@@ -83,12 +83,12 @@ POST /upload
 1. Recibir PDF de usuario
 2. Obtener categorias_globales de base de datos
 3. Enviar a 3 workers con categorias_globales
-4. Recibir predicciÃ³n: "TecnologÃ­a/Redes"
-5. Validar que existe en catÃ¡logo (resolver_tema_predicho)
-6. SI NO EXISTE â†’ Asignar automÃ¡ticamente "Otros/General"
+4. Recibir predicción: "Tecnología/Redes"
+5. Validar que existe en catálogo (resolver_tema_predicho)
+6. SI NO EXISTE → Asignar automáticamente "Otros/General"
 7. Guardar documento con usuario_id (privacidad)
 8. Replicar en 3 nodos
-9. Devolver respuesta con clasificaciÃ³n
+9. Devolver respuesta con clasificación
 ```
 
 ---
@@ -98,15 +98,15 @@ POST /upload
 #### **Nuevas funciones en `master/database.py`:**
 ```python
 obtener_catalogo_global()
-  â†’ Devuelve tabla completa de tematicas
+  → Devuelve tabla completa de tematicas
   
 obtener_categorias_globales()
-  â†’ Devuelve lista de rutas jerÃ¡rquicas
-  â†’ ["TecnologÃ­a/IA", "TecnologÃ­a/Redes", ...]
+  → Devuelve lista de rutas jerárquicas
+  → ["Tecnología/IA", "Tecnología/Redes", ...]
   
 resolver_tema_predicho(ruta_predicha)
-  â†’ Convierte "TecnologÃ­a/IA" â†’ (tematica_id, subtematica_id)
-  â†’ O None si no existe
+  → Convierte "Tecnología/IA" → (tematica_id, subtematica_id)
+  → O None si no existe
 ```
 
 #### **Funciones removidas:**
@@ -123,20 +123,20 @@ insertar_subtematica()           # Users no pueden crear
 #### **`worker/classifier.py` - Cambios:**
 ```python
 TRAINING_DATA = {
-    # ANTES: ["IA", "Redes", "Bases Datos", "BiologÃ­a", "MatemÃ¡ticas", "General"]
-    # AHORA: Rutas jerÃ¡rquicas
-    "TecnologÃ­a/Inteligencia Artificial": [...docs...],
-    "TecnologÃ­a/Redes": [...docs...],
-    "TecnologÃ­a/Bases de Datos": [...docs...],
-    "Ciencias/BiologÃ­a": [...docs...],
-    "Ciencias/MatemÃ¡ticas": [...docs...],
+    # ANTES: ["IA", "Redes", "Bases Datos", "Biología", "Matemáticas", "General"]
+    # AHORA: Rutas jerárquicas
+    "Tecnología/Inteligencia Artificial": [...docs...],
+    "Tecnología/Redes": [...docs...],
+    "Tecnología/Bases de Datos": [...docs...],
+    "Ciencias/Biología": [...docs...],
+    "Ciencias/Matemáticas": [...docs...],
     "Otros/General": [...docs...],
 }
 
 def clasificar(texto, categorias_global)
     # ANTES: parametro areas_usuario
     # AHORA: categorias_global (full catalog)
-    # Devuelve: "TecnologÃ­a/Redes" o fallback "Otros/General"
+    # Devuelve: "Tecnología/Redes" o fallback "Otros/General"
 ```
 
 ---
@@ -146,20 +146,20 @@ def clasificar(texto, categorias_global)
 #### **`master/consensus.py` - Cambios:**
 ```python
 def clasificar_con_consenso(texto_pdf, categorias_global)
-    # EnvÃ­a a 3 workers
+    # Envía a 3 workers
     # Recibe predicciones:
-    #   Worker1: "TecnologÃ­a/Redes"
-    #   Worker2: "TecnologÃ­a/Redes"
-    #   Worker3: "Ciencias/BiologÃ­a"
-    # Vota por mayorÃ­a â†’ "TecnologÃ­a/Redes"
-    # Si no hay consenso â†’ "Otros/General" (fallback)
+    #   Worker1: "Tecnología/Redes"
+    #   Worker2: "Tecnología/Redes"
+    #   Worker3: "Ciencias/Biología"
+    # Vota por mayoría → "Tecnología/Redes"
+    # Si no hay consenso → "Otros/General" (fallback)
 ```
 
 ---
 
-## ðŸ“¦ ARCHIVOS CREADOS
+## 📦 ARCHIVOS CREADOS
 
-| Archivo | PropÃ³sito |
+| Archivo | Propósito |
 |---------|-----------|
 | `MIGRACION_CATALOGO_GLOBAL.sql` | Script para aplicar cambios en Supabase |
 | `GUIA_APLICAR_CAMBIOS_SUPABASE.md` | Instrucciones paso a paso |
@@ -167,65 +167,65 @@ def clasificar_con_consenso(texto_pdf, categorias_global)
 
 ---
 
-## ðŸŽ¯ RESULTADOS ESPERADOS
+## 🎯 RESULTADOS ESPERADOS
 
 ### **Antes del cambio:**
 ```
 Usuario: juan@mail.com
-- Mis Ãreas:
+- Mis Áreas:
   - "Redes y Telecomunicaciones"
     - "WiFi"
-    - "Fibra Ã“ptica"
+    - "Fibra Óptica"
   - "Inteligencia Artificial"
     - "Aprendizaje Profundo"
 
 Usuario: maria@mail.com
-- Mis Ãreas:
+- Mis Áreas:
   - "IA" (diferente nombre)
     - "ML"
   - "Ciencias Puras"
-    - "BiologÃ­a Molecular"
+    - "Biología Molecular"
 
-âŒ PROBLEMA: Mismo contenido, nombres diferentes â†’ confusiÃ³n ML
+❌ PROBLEMA: Mismo contenido, nombres diferentes → confusión ML
 ```
 
-### **DespuÃ©s del cambio:**
+### **Después del cambio:**
 ```
-CATÃLOGO GLOBAL (igual para todos):
-â”œâ”€ TecnologÃ­a
-â”‚  â”œâ”€ Inteligencia Artificial
-â”‚  â”œâ”€ Redes
-â”‚  â””â”€ Bases de Datos
-â”œâ”€ Ciencias
-â”‚  â”œâ”€ BiologÃ­a
-â”‚  â””â”€ MatemÃ¡ticas
-â””â”€ Otros
-   â””â”€ General
+CATÁLOGO GLOBAL (igual para todos):
+├─ Tecnología
+│  ├─ Inteligencia Artificial
+│  ├─ Redes
+│  └─ Bases de Datos
+├─ Ciencias
+│  ├─ Biología
+│  └─ Matemáticas
+└─ Otros
+   └─ General
 
 Usuario: juan@mail.com
 - Subio: paper.pdf
-- Clasificado en: TecnologÃ­a/Redes
+- Clasificado en: Tecnología/Redes
 - Consenso: 3/3 workers votaron igual
 - Privacidad: Juan solo ve sus documentos
 
 Usuario: maria@mail.com
 - Subio: biology_paper.pdf
-- Clasificado en: Ciencias/BiologÃ­a
+- Clasificado en: Ciencias/Biología
 - Consenso: 3/3 workers votaron igual
 - Privacidad: Maria solo ve sus documentos
 
-âœ… BENEFICIOS:
-  - Mismo catÃ¡logo para todos â†’ ML mÃ¡s consistente
-  - Usuarios no pueden crear/borrar categorÃ­as
-  - ClasificaciÃ³n automÃ¡tica y determinÃ­stica
+✅ BENEFICIOS:
+  - Mismo catálogo para todos → ML más consistente
+  - Usuarios no pueden crear/borrar categorías
+  - Clasificación automática y determinística
   - Privacidad mantiene usuario_id
 ```
 
 ---
 
-## ðŸš€ CHECKLIST DE IMPLEMENTACIÃ“N
+## 🚀 CHECKLIST DE IMPLEMENTACIÓN
 
-### Fase 1: Base de Datos â³
+### Fase 1: Base de Datos ⏳
 - [ ] Ejecutar `MIGRACION_CATALOGO_GLOBAL.sql` en Supabase
 - [ ] Verificar tabla `tematicas` sin `usuario_id`
 - [ ] Verificar 3 tematicas + 8 subtematicas insertadas
@@ -237,13 +237,13 @@ Usuario: maria@mail.com
 - [ ] Verificar: logs muestren "Training complete"
 
 ### Fase 3: Testing
-- [ ] GET /categories â†’ devuelve catÃ¡logo global
-- [ ] POST /upload â†’ clasifica automÃ¡ticamente
-- [ ] POST /upload (PDF sin match) â†’ fallback "Otros/General"
-- [ ] GET /files â†’ solo documentos del usuario autenticado
+- [ ] GET /categories → devuelve catálogo global
+- [ ] POST /upload → clasifica automáticamente
+- [ ] POST /upload (PDF sin match) → fallback "Otros/General"
+- [ ] GET /files → solo documentos del usuario autenticado
 - [ ] Verificar consenso: logs muestren 3/3 workers votando
 
-### Fase 4: ProducciÃ³n
+### Fase 4: Producción
 - [ ] Monitoring activado
 - [ ] Alertas configuradas
 - [ ] Logs siendo guardados
@@ -251,22 +251,22 @@ Usuario: maria@mail.com
 
 ---
 
-## ðŸ“ˆ IMPACTO DEL CAMBIO
+## 📈 IMPACTO DEL CAMBIO
 
-| MÃ©trica | Antes | DespuÃ©s | Mejora |
+| Métrica | Antes | Después | Mejora |
 |---------|-------|---------|--------|
-| CategorÃ­as Ãºnicas en sistema | +100 (per user) | 8 | 92% menos caos |
-| Consistencia de categorÃ­as | Baja | Alta | âœ… |
-| Capacidad de crear/borrar | Usuarios | Admin | âœ… Seguridad |
-| PrecisiÃ³n ML esperada | ~70% | ~85% | +15% |
-| Consenso de workers | Variable | DeterminÃ­stico | âœ… |
-| Fallback automÃ¡tico | No | SÃ­ | âœ… Robustez |
+| Categorías únicas en sistema | +100 (per user) | 8 | 92% menos caos |
+| Consistencia de categorías | Baja | Alta | ✅ |
+| Capacidad de crear/borrar | Usuarios | Admin | ✅ Seguridad |
+| Precisión ML esperada | ~70% | ~85% | +15% |
+| Consenso de workers | Variable | Determinístico | ✅ |
+| Fallback automático | No | Sí | ✅ Robustez |
 
 ---
 
-## ðŸ” VERIFICACIÃ“N POST-MIGRACIÃ“N
+## 🔍 VERIFICACIÓN POST-MIGRACIÓN
 
-Para confirmar que todo estÃ¡ correcto:
+Para confirmar que todo está correcto:
 
 ```bash
 # 1. Verificar schema
@@ -276,18 +276,18 @@ curl -X GET http://localhost:8000/categories \
 # Respuesta esperada:
 {
   "categorias_globales": [
-    "TecnologÃ­a/Inteligencia Artificial",
-    "TecnologÃ­a/Redes",
-    "TecnologÃ­a/Bases de Datos",
-    "TecnologÃ­a/Sistemas Operativos",
-    "TecnologÃ­a/Sistemas Distribuidos",
-    "Ciencias/BiologÃ­a",
-    "Ciencias/MatemÃ¡ticas",
+    "Tecnología/Inteligencia Artificial",
+    "Tecnología/Redes",
+    "Tecnología/Bases de Datos",
+    "Tecnología/Sistemas Operativos",
+    "Tecnología/Sistemas Distribuidos",
+    "Ciencias/Biología",
+    "Ciencias/Matemáticas",
     "Otros/General"
   ]
 }
 
-# 2. Probar clasificaciÃ³n
+# 2. Probar clasificación
 curl -X POST http://localhost:8000/upload \
   -H "Authorization: Bearer test-token" \
   -F "archivo=@sample.pdf"
@@ -295,11 +295,11 @@ curl -X POST http://localhost:8000/upload \
 # Debe devolver algo como:
 {
   "archivo": "sample.pdf",
-  "clasificado_en": "TecnologÃ­a/Redes",
+  "clasificado_en": "Tecnología/Redes",
   "confianza": 0.87,
   "consenso": {
-    "votos": {"TecnologÃ­a/Redes": 3},
-    "mejor_opcion": "TecnologÃ­a/Redes",
+    "votos": {"Tecnología/Redes": 3},
+    "mejor_opcion": "Tecnología/Redes",
     "acuerdo_workers": true
   }
 }
@@ -316,53 +316,54 @@ curl -X GET http://localhost:8000/files \
 
 ---
 
-## ðŸ“ NOTAS IMPORTANTES
+## 📝 NOTAS IMPORTANTES
 
-1. **MigraciÃ³n es irreversible sin backup**
-   - Hacer backup ANTES de ejecutar migraciÃ³n
+1. **Migración es irreversible sin backup**
+   - Hacer backup ANTES de ejecutar migración
    - Supabase permite restore desde snapshots
 
 2. **Documentos viejos**
-   - Si hay documentos con tematica_id que se borra, migraciÃ³n los reasigna
-   - Script maneja esto automÃ¡ticamente
+   - Si hay documentos con tematica_id que se borra, migración los reasigna
+   - Script maneja esto automáticamente
 
 3. **Modelo ML necesita reentrenamiento**
-   - Ejecutar `python worker/entrenar_modelo.py` DESPUÃ‰S de migraciÃ³n BD
-   - Esto regenera `modelo_clasificador.pkl` con nuevas categorÃ­as
+   - Ejecutar `python worker/entrenar_modelo.py` DESPUÉS de migración BD
+   - Esto regenera `modelo_clasificador.pkl` con nuevas categorías
 
-4. **Usuarios notarÃ¡n cambios**
-   - Ya no pueden crear/borrar categorÃ­as
-   - Pero clasificaciÃ³n es mÃ¡s automÃ¡tica y consistente
+4. **Usuarios notarán cambios**
+   - Ya no pueden crear/borrar categorías
+   - Pero clasificación es más automática y consistente
    - Interfaz debe actualizar para mostrar solo lectura
 
 5. **Performance**
-   - Menos queries (no buscar categorÃ­as por usuario)
-   - MÃ¡s rÃ¡pido: catÃ¡logo en memoria cachÃ©
-   - Consenso determina mejor ruta automÃ¡ticamente
+   - Menos queries (no buscar categorías por usuario)
+   - Más rápido: catálogo en memoria caché
+   - Consenso determina mejor ruta automáticamente
 
 ---
 
-## ðŸŽ“ CONCLUSIÃ“N
+## 🎓 CONCLUSIÓN
 
-**TransformaciÃ³n completada con Ã©xito:**
+**Transformación completada con éxito:**
 
 ```
-âŒ Sistema caÃ³tico (mÃºltiples categorÃ­as con mismo nombre)
-   â†“
-âœ… CatÃ¡logo global determinÃ­stico y seguro
-   â†“
-âœ… ClasificaciÃ³n automÃ¡tica y consistente
-   â†“
-âœ… Privacidad mantenida (usuario_id protege datos)
-   â†“
-âœ… ML predecible y auditable
+❌ Sistema caótico (múltiples categorías con mismo nombre)
+   ↓
+✅ Catálogo global determinístico y seguro
+   ↓
+✅ Clasificación automática y consistente
+   ↓
+✅ Privacidad mantenida (usuario_id protege datos)
+   ↓
+✅ ML predecible y auditable
 ```
 
-**Tiempo para producciÃ³n:** 30 minutos  
+**Tiempo para producción:** 30 minutos  
 **Riesgo:** Bajo (con backup)  
-**Beneficio:** Alto (consistencia, seguridad, automatizaciÃ³n)
+**Beneficio:** Alto (consistencia, seguridad, automatización)
 
 ---
 
-**Â¿Listo para ejecutar la migraciÃ³n?** ðŸš€
+**¿Listo para ejecutar la migración?** 🚀
+
 

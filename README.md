@@ -1,45 +1,45 @@
-﻿# Clasificador Distribuido de Archivos Cientificos
+﻿# Clasificador Distribuido de Archivos Científicos
 
-Sistema distribuido para clasificacion de PDFs cientificos con FastAPI, consenso por mayoria entre workers y eleccion de lider con algoritmo Bully.
+Sistema distribuido para clasificación de PDFs científicos con FastAPI, consenso por mayoría entre workers y elección de líder con algoritmo Bully.
 
 ## Arquitectura
 
 ```text
 clasificador-final/
-â”œâ”€â”€ master/
-â”‚   â”œâ”€â”€ __init__.py
-â”‚   â”œâ”€â”€ main.py
-â”‚   â”œâ”€â”€ routes.py
-â”‚   â”œâ”€â”€ auth.py
-â”‚   â”œâ”€â”€ gateway.py
-â”‚   â”œâ”€â”€ consensus.py
-â”‚   â”œâ”€â”€ adapter.py
-â”‚   â”œâ”€â”€ database.py
-â”‚   â”œâ”€â”€ deletion_coordinator.py
-â”‚   â””â”€â”€ apa.py
-â”œâ”€â”€ worker/
-â”‚   â”œâ”€â”€ __init__.py
-â”‚   â”œâ”€â”€ main.py
-â”‚   â”œâ”€â”€ extractor.py
-â”‚   â”œâ”€â”€ classifier.py
-â”‚   â””â”€â”€ sync.py
-â”œâ”€â”€ shared/
-â”‚   â”œâ”€â”€ __init__.py
-â”‚   â”œâ”€â”€ election.py
-â”‚   â””â”€â”€ leader_db.py
-â”œâ”€â”€ storage/
-â”œâ”€â”€ frontend/
-â”œâ”€â”€ requirements.txt
-â””â”€â”€ CRONOGRAMA.md
+├── master/
+│   ├── __init__.py
+│   ├── main.py
+│   ├── routes.py
+│   ├── auth.py
+│   ├── gateway.py
+│   ├── consensus.py
+│   ├── adapter.py
+│   ├── database.py
+│   ├── deletion_coordinator.py
+│   └── apa.py
+├── worker/
+│   ├── __init__.py
+│   ├── main.py
+│   ├── extractor.py
+│   ├── classifier.py
+│   └── sync.py
+├── shared/
+│   ├── __init__.py
+│   ├── election.py
+│   └── leader_db.py
+├── storage/
+├── frontend/
+├── requirements.txt
+└── CRONOGRAMA.md
 ```
 
 ## Componentes clave
 
-- master: API de negocio, autenticacion, catalogo global, documentos y administracion.
-- worker: procesamiento de PDF (extraccion + clasificacion).
-- shared/election.py: deteccion de caida de lider y eleccion automatica.
-- shared/leader_db.py: registro del lider activo y heartbeat en Supabase.
-- master/consensus.py: votacion entre workers para clasificacion final.
+- master: API de negocio, autenticación, catálogo global, documentos y administración.
+- worker: procesamiento de PDF (extracción + clasificación).
+- shared/election.py: detección de caída de líder y elección automática.
+- shared/leader_db.py: registro del líder activo y heartbeat en Supabase.
+- master/consensus.py: votación entre workers para clasificación final.
 
 ## Instalacion
 
@@ -58,9 +58,9 @@ uvicorn worker.main:app --port 5003
 uvicorn master.main:app --port 8000
 ```
 
-En desarrollo local no hace falta configurar nada mas: si no defines variables de entorno, el sistema usa `localhost` por defecto.
+En desarrollo local no hace falta configurar nada más: si no defines variables de entorno, el sistema usa `localhost` por defecto.
 
-Documentacion OpenAPI:
+Documentación OpenAPI:
 
 ```text
 http://localhost:8000/docs
@@ -68,33 +68,33 @@ http://localhost:8000/docs
 
 ## Variables de entorno
 
-- NODO_ID: id del nodo actual para eleccion de lider.
+- NODO_ID: id del nodo actual para elección de líder.
 - CLUSTER_NODE_1_URL: URL real del nodo 1.
 - CLUSTER_NODE_2_URL: URL real del nodo 2.
 - CLUSTER_NODE_3_URL: URL real del nodo 3.
 - CLUSTER_NODE_4_URL: URL real del nodo 4.
 - CLUSTER_NODES_JSON: alternativa para definir todos los nodos en una sola variable JSON.
 - SUPABASE_URL: URL del proyecto Supabase.
-- SUPABASE_KEY: clave de acceso para operaciones de lider.
+- SUPABASE_KEY: clave de acceso para operaciones de líder.
 - ALMACENAMIENTO_NODO: ruta local del nodo worker.
 
-## Configuracion para 4 computadoras
+## Configuración para 4 computadoras
 
 Cuando el backend pase de local a una LAN con 4 PCs, el cambio real se hace en dos partes:
 
-1. Cada maquina recibe una URL fija y un NODO_ID.
-2. El backend deja de apuntar a localhost y usa esas URLs para election, consenso y borrado.
+1. Cada máquina recibe una URL fija y un NODO_ID.
+2. El backend deja de apuntar a localhost y usa esas URLs para elección, consenso y borrado.
 
 ### Mapa recomendado
 
-| Maquina | NODO_ID | URL |
+| Máquina | NODO_ID | URL |
 |---|---:|---|
 | PC 1 | 1 | http://192.168.1.101:5001 |
 | PC 2 | 2 | http://192.168.1.102:5002 |
 | PC 3 | 3 | http://192.168.1.103:5003 |
 | PC 4 | 4 | http://192.168.1.104:8000 |
 
-### Opcion A: configurar una variable por nodo
+### Opción A: configurar una variable por nodo
 
 En cada computadora define el valor que le corresponde antes de iniciar FastAPI.
 
@@ -140,7 +140,7 @@ $env:CLUSTER_NODE_4_URL = "http://192.168.1.104:8000"
 uvicorn master.main:app --host 0.0.0.0 --port 8000
 ```
 
-### Opcion B: definir todo en una sola variable
+### Opción B: definir todo en una sola variable
 
 ```powershell
 $env:NODO_ID = "2"
@@ -150,29 +150,29 @@ uvicorn worker.main:app --host 0.0.0.0 --port 5002
 
 ### Regla importante
 
-- El `NODO_ID` debe coincidir con la maquina donde corre el proceso.
+- El `NODO_ID` debe coincidir con la máquina donde corre el proceso.
 - La URL de cada nodo debe ser accesible desde las otras PCs.
-- Si una PC cambia de IP, actualiza la configuracion del cluster.
+- Si una PC cambia de IP, actualiza la configuración del cluster.
 - Para pruebas en una sola laptop, no configures nada: el sistema sigue usando `localhost`.
 
 ## Endpoints principales
 
 - Auth: /register, /login, /logout
-- Categorias: /categories
+- Categorías: /categories
 - Documentos: /upload, /files, /download, /document
 - Admin: /admin/users
-- Eleccion de lider: /heartbeat, /leader, /election/start, /election/coordinator
+- Elección de líder: /heartbeat, /leader, /election/start, /election/coordinator
 
 ## Flujo funcional
 
 1. Usuario autentica y obtiene token.
 2. Master valida archivo y metadatos.
-3. Master envia el PDF a workers y calcula mayoria.
+3. Master envía el PDF a workers y calcula mayoría.
 4. PDF se replica en storage/node1-node3.
-5. Metadatos y sesion se guardan en Supabase (tablas usuarios, tokens_sesion, tematicas, subtematicas, documentos, nodos_almacenamiento y consenso_votos).
-6. Si el lider cae, cualquier worker o el master puede asumir el rol, siempre que tenga el `NODO_ID` correcto y gane la eleccion Bully.
+5. Metadatos y sesión se guardan en Supabase (tablas usuarios, tokens_sesion, tematicas, subtematicas, documentos, nodos_almacenamiento y consenso_votos).
+6. Si el líder cae, cualquier worker o el master puede asumir el rol, siempre que tenga el `NODO_ID` correcto y gane la elección Bully.
 
-## Documentacion complementaria
+## Documentación complementaria
 
 - CRONOGRAMA.md
 - documentacion/resumen_arquitectura.md
@@ -180,4 +180,5 @@ uvicorn worker.main:app --host 0.0.0.0 --port 5002
 - documentacion/arquitectura_tecnica.md
 - documentacion/integracion_cluster.md
 - documentacion/validacion_gateway.md
+
 

@@ -38,7 +38,7 @@ Estado: En curso
   - sincronizacion completa de arranque en workers
   - borrado coordinado en dos fases entre nodos
 
-Nota de estado real: estas dos partes siguen solo diseÃ±adas, no implementadas del todo en el codigo actual.
+Nota de estado real: estas dos partes siguen solo diseñadas, no implementadas del todo en el codigo actual.
 
 ## Bloque D: Persistencia de Dominio
 
@@ -85,4 +85,5 @@ Estado: Planificado
 ## Nota de interpretacion
 
 Este cronograma es una guia historica. Para el estado real actual del sistema, priorizar el codigo fuente y el esquema de Supabase sobre estas notas.
+
 

@@ -1,12 +1,12 @@
-﻿# ðŸ“Š COMPARACIÃ“N: Esquema ANTES vs DESPUÃ‰S
+﻿# 📊 COMPARACIÓN: Esquema ANTES vs DESPUÉS
 
-## Vista RÃ¡pida: Cambios principales en SQL
+## Vista Rápida: Cambios principales en SQL
 
 ---
 
 ## 1. Tabla `tematicas`
 
-### âŒ ANTES (en tu Supabase)
+### ❌ ANTES (en tu Supabase)
 ```sql
 CREATE TABLE tematicas (
     id           INT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
@@ -19,44 +19,44 @@ CREATE TABLE tematicas (
     CONSTRAINT ck_nombre_no_vacio CHECK (trim(nombre) != '')
 );
 
--- Cada usuario tenÃ­a sus propias categorÃ­as
--- juan@mail.com podrÃ­a tener "IA"
--- maria@mail.com podrÃ­a tener "Inteligencia Artificial"
+-- Cada usuario tenía sus propias categorías
+-- juan@mail.com podría tener "IA"
+-- maria@mail.com podría tener "Inteligencia Artificial"
 -- (mismo concepto, nombres diferentes)
 ```
 
-### âœ… DESPUÃ‰S (en el cÃ³digo local)
+### ✅ DESPUÉS (en el código local)
 ```sql
 CREATE TABLE tematicas (
     id           INT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    -- usuario_id   â† REMOVIDO âŒ
+    -- usuario_id   ← REMOVIDO ❌
     nombre       TEXT NOT NULL,
     es_general   BOOLEAN DEFAULT FALSE,
     creado_en    TIMESTAMPTZ DEFAULT now(),
 
-    -- CONSTRAINT uq_tematica_usuario â† REMOVIDO âŒ
-    CONSTRAINT uq_tematica_nombre UNIQUE (nombre),  -- â† AGREGADO âœ…
+    -- CONSTRAINT uq_tematica_usuario ← REMOVIDO ❌
+    CONSTRAINT uq_tematica_nombre UNIQUE (nombre),  -- ← AGREGADO ✅
     CONSTRAINT ck_nombre_no_vacio CHECK (trim(nombre) != '')
 );
 
--- CatÃ¡logo global - IGUAL para todos los usuarios
+-- Catálogo global - IGUAL para todos los usuarios
 INSERT INTO tematicas (nombre, es_general) VALUES
-    ('TecnologÃ­a', FALSE),
+    ('Tecnología', FALSE),
     ('Ciencias', FALSE),
     ('Otros', TRUE);
 ```
 
 **Impacto:**
-- âœ… Todas las categorÃ­as son globales
-- âœ… Usuarios no pueden duplicar nombres
-- âœ… Menor complejidad en queries
-- âœ… ML tiene datos consistentes
+- ✅ Todas las categorías son globales
+- ✅ Usuarios no pueden duplicar nombres
+- ✅ Menor complejidad en queries
+- ✅ ML tiene datos consistentes
 
 ---
 
 ## 2. Tabla `subtematicas`
 
-### âŒ ANTES
+### ❌ ANTES
 ```sql
 CREATE TABLE subtematicas (
     id            INT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
@@ -68,11 +68,11 @@ CREATE TABLE subtematicas (
     CONSTRAINT ck_nombre_no_vacio CHECK (trim(nombre) != '')
 );
 
--- VacÃ­a o con datos sueltos creados por usuarios
--- Cada usuario crearÃ­a sus propias subcategorÃ­as
+-- Vacía o con datos sueltos creados por usuarios
+-- Cada usuario crearía sus propias subcategorías
 ```
 
-### âœ… DESPUÃ‰S
+### ✅ DESPUÉS
 ```sql
 CREATE TABLE subtematicas (
     id            INT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
@@ -84,38 +84,38 @@ CREATE TABLE subtematicas (
     CONSTRAINT ck_nombre_no_vacio CHECK (trim(nombre) != '')
 );
 
--- Ahora poblada con catÃ¡logo FIJO de 8 subcategorÃ­as
+-- Ahora poblada con catálogo FIJO de 8 subcategorías
 INSERT INTO subtematicas (tematica_id, nombre)
-SELECT id, 'Inteligencia Artificial' FROM tematicas WHERE nombre = 'TecnologÃ­a';
+SELECT id, 'Inteligencia Artificial' FROM tematicas WHERE nombre = 'Tecnología';
 INSERT INTO subtematicas (tematica_id, nombre)
-SELECT id, 'Redes' FROM tematicas WHERE nombre = 'TecnologÃ­a';
--- ... (6 inserts mÃ¡s)
+SELECT id, 'Redes' FROM tematicas WHERE nombre = 'Tecnología';
+-- ... (6 inserts más)
 ```
 
 **Estructura final:**
 ```
-TecnologÃ­a (ID: 1)
-â”œâ”€ Inteligencia Artificial (ID: 1)
-â”œâ”€ Redes (ID: 2)
-â”œâ”€ Bases de Datos (ID: 3)
-â”œâ”€ Sistemas Operativos (ID: 4)
-â””â”€ Sistemas Distribuidos (ID: 5)
+Tecnología (ID: 1)
+├─ Inteligencia Artificial (ID: 1)
+├─ Redes (ID: 2)
+├─ Bases de Datos (ID: 3)
+├─ Sistemas Operativos (ID: 4)
+└─ Sistemas Distribuidos (ID: 5)
 
 Ciencias (ID: 2)
-â”œâ”€ BiologÃ­a (ID: 6)
-â””â”€ MatemÃ¡ticas (ID: 7)
+├─ Biología (ID: 6)
+└─ Matemáticas (ID: 7)
 
 Otros (ID: 3)
-â””â”€ General (ID: 8)
+└─ General (ID: 8)
 ```
 
 ---
 
 ## 3. Triggers: `trg_crear_general`
 
-### âŒ ANTES (en tu Supabase)
+### ❌ ANTES (en tu Supabase)
 ```sql
--- AutomÃ¡ticamente creaba una categorÃ­a "General" para cada usuario nuevo
+-- Automáticamente creaba una categoría "General" para cada usuario nuevo
 CREATE OR REPLACE FUNCTION crear_tematica_general()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -130,12 +130,12 @@ AFTER INSERT ON usuarios
 FOR EACH ROW
 EXECUTE FUNCTION crear_tematica_general();
 
--- Problema: Cada usuario tenÃ­a su "General" â†’ inconsistencia
+-- Problema: Cada usuario tenía su "General" → inconsistencia
 ```
 
-### âœ… DESPUÃ‰S
+### ✅ DESPUÉS
 ```sql
--- TRIGGER REMOVIDO âŒ
+-- TRIGGER REMOVIDO ❌
 DROP TRIGGER IF EXISTS trg_crear_general ON usuarios;
 DROP FUNCTION IF EXISTS crear_tematica_general();
 
@@ -160,17 +160,17 @@ CREATE TABLE documentos (
     -- ... resto de columnas igual
 );
 
--- Cambio de lÃ³gica:
--- ANTES: documento.tematica_id â†’ en tabla tematicas donde usuario_id = ?
--- AHORA: documento.tematica_id â†’ en tabla tematicas global
---        documento.usuario_id â†’ privacidad (solo ve sus docs)
+-- Cambio de lógica:
+-- ANTES: documento.tematica_id → en tabla tematicas donde usuario_id = ?
+-- AHORA: documento.tematica_id → en tabla tematicas global
+--        documento.usuario_id → privacidad (solo ve sus docs)
 ```
 
 ---
 
 ## 5. Vista `vista_arbol_usuario`
 
-### âŒ ANTES
+### ❌ ANTES
 ```sql
 CREATE OR REPLACE VIEW vista_arbol_usuario AS
 SELECT
@@ -179,7 +179,7 @@ SELECT
     s.id, s.nombre,
     COUNT(d.id) AS total_documentos
 FROM usuarios u
-JOIN tematicas t ON t.usuario_id = u.id  -- â† JOIN por usuario
+JOIN tematicas t ON t.usuario_id = u.id  -- ← JOIN por usuario
 LEFT JOIN subtematicas s ON s.tematica_id = t.id
 LEFT JOIN documentos d ON d.tematica_id = t.id
     AND (d.subtematica_id = s.id OR ...)
@@ -187,18 +187,18 @@ LEFT JOIN documentos d ON d.tematica_id = t.id
     AND d.usuario_id = u.id
 GROUP BY ...;
 
--- Resultado: Cada usuario ve solo SUS categorÃ­as personales
--- â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
--- â”‚ usuario â”‚ tematica            â”‚
--- â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
--- â”‚ juan    â”‚ Mi IA               â”‚
--- â”‚ juan    â”‚ Mis Redes           â”‚
--- â”‚ maria   â”‚ IA de Maria         â”‚
--- â”‚ maria   â”‚ Ciencias de Maria   â”‚
--- â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+-- Resultado: Cada usuario ve solo SUS categorías personales
+-- ┌─────────┬─────────────────────┐
+-- │ usuario │ tematica            │
+-- ├─────────┼─────────────────────┤
+-- │ juan    │ Mi IA               │
+-- │ juan    │ Mis Redes           │
+-- │ maria   │ IA de Maria         │
+-- │ maria   │ Ciencias de Maria   │
+-- └─────────┴─────────────────────┘
 ```
 
-### âœ… DESPUÃ‰S
+### ✅ DESPUÉS
 ```sql
 CREATE OR REPLACE VIEW vista_arbol_usuario AS
 SELECT
@@ -207,33 +207,33 @@ SELECT
     s.id, s.nombre,
     COUNT(d.id) AS total_documentos
 FROM usuarios u
-CROSS JOIN tematicas t  -- â† CROSS JOIN (todas las categorÃ­as globales)
+CROSS JOIN tematicas t  -- ← CROSS JOIN (todas las categorías globales)
 LEFT JOIN subtematicas s ON s.tematica_id = t.id
-LEFT JOIN documentos d ON d.usuario_id = u.id  -- â† Filtrar por usuario
+LEFT JOIN documentos d ON d.usuario_id = u.id  -- ← Filtrar por usuario
     AND d.tematica_id = t.id
     AND (d.subtematica_id = s.id OR ...)
     AND d.estado = 'activo'
 GROUP BY ...;
 
--- Resultado: Cada usuario ve EL MISMO catÃ¡logo
--- â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
--- â”‚ usuario â”‚ tematica/subtematica         â”‚
--- â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
--- â”‚ juan    â”‚ TecnologÃ­a / Inteligencia AI â”‚
--- â”‚ juan    â”‚ TecnologÃ­a / Redes           â”‚
--- â”‚ juan    â”‚ TecnologÃ­a / Bases de Datos  â”‚
--- â”‚ maria   â”‚ TecnologÃ­a / Inteligencia AI â”‚ â† MISMO CATÃLOGO
--- â”‚ maria   â”‚ TecnologÃ­a / Redes           â”‚
--- â”‚ maria   â”‚ Ciencias / BiologÃ­a          â”‚
--- â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+-- Resultado: Cada usuario ve EL MISMO catálogo
+-- ┌─────────┬──────────────────────────────┐
+-- │ usuario │ tematica/subtematica         │
+-- ├─────────┼──────────────────────────────┤
+-- │ juan    │ Tecnología / Inteligencia AI │
+-- │ juan    │ Tecnología / Redes           │
+-- │ juan    │ Tecnología / Bases de Datos  │
+-- │ maria   │ Tecnología / Inteligencia AI │ ← MISMO CATÁLOGO
+-- │ maria   │ Tecnología / Redes           │
+-- │ maria   │ Ciencias / Biología          │
+-- └─────────┴──────────────────────────────┘
 
 -- Pero COUNT de documentos es POR USUARIO
--- â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
--- â”‚ usuario â”‚ tematica/subtematica           â”‚ total_documentos â”‚
--- â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
--- â”‚ juan    â”‚ TecnologÃ­a / Redes             â”‚ 2                â”‚
--- â”‚ maria   â”‚ TecnologÃ­a / Redes             â”‚ 5                â”‚
--- â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+-- ┌─────────┬────────────────────────────────┬──────────────────┐
+-- │ usuario │ tematica/subtematica           │ total_documentos │
+-- ├─────────┼────────────────────────────────┼──────────────────┤
+-- │ juan    │ Tecnología / Redes             │ 2                │
+-- │ maria   │ Tecnología / Redes             │ 5                │
+-- └─────────┴────────────────────────────────┴──────────────────┘
 ```
 
 ---
@@ -249,79 +249,79 @@ GROUP BY ...;
 ## 7. Tabla `consenso_votos` (sin cambios principales)
 
 ```sql
--- Antes: Guardaba votos sobre categorÃ­as per-usuario
--- Ahora: Guarda votos sobre categorÃ­as globales
+-- Antes: Guardaba votos sobre categorías per-usuario
+-- Ahora: Guarda votos sobre categorías globales
 
 -- Estructura igual, pero:
 -- ANTES: voto = usuario_area_name: "Mi IA"
--- AHORA: voto = ruta_global: "TecnologÃ­a/Inteligencia Artificial"
+-- AHORA: voto = ruta_global: "Tecnología/Inteligencia Artificial"
 ```
 
 ---
 
-## ðŸ“‹ RESUMEN DE CAMBIOS POR TABLA
+## 📋 RESUMEN DE CAMBIOS POR TABLA
 
 | Tabla | Cambios |
 |-------|---------|
-| `usuarios` | âœ… Sin cambios |
-| `tematicas` | âŒ Removido `usuario_id`, âœ… Agregado `UNIQUE(nombre)`, âœ… Insertados 3 registros |
-| `subtematicas` | âœ… Sin cambios estructurales, âœ… Insertados 8 registros |
-| `documentos` | âœ… Sin cambios estructurales |
-| `nodos_almacenamiento` | âœ… Sin cambios |
-| `consenso_votos` | âœ… Sin cambios estructurales |
-| `lider_actual` | âœ… Sin cambios |
-| `vista_arbol_usuario` | âš ï¸ LÃ³gica cambiada (CROSS JOIN) |
+| `usuarios` | ✅ Sin cambios |
+| `tematicas` | ❌ Removido `usuario_id`, ✅ Agregado `UNIQUE(nombre)`, ✅ Insertados 3 registros |
+| `subtematicas` | ✅ Sin cambios estructurales, ✅ Insertados 8 registros |
+| `documentos` | ✅ Sin cambios estructurales |
+| `nodos_almacenamiento` | ✅ Sin cambios |
+| `consenso_votos` | ✅ Sin cambios estructurales |
+| `lider_actual` | ✅ Sin cambios |
+| `vista_arbol_usuario` | ⚠️ Lógica cambiada (CROSS JOIN) |
 
 ---
 
-## ðŸ”„ MIGRACIÃ“N PASO A PASO
+## 🔄 MIGRACIÓN PASO A PASO
 
 ```
 Estado ANTES (Supabase actual):
-â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-â”‚ tematicas (con usuario_id, datos viejos) â”‚
-â”‚ - Juan's IA                              â”‚
-â”‚ - Juan's Redes                           â”‚
-â”‚ - Maria's IA (diferente)                 â”‚
-â”‚ - Maria's Ciencias                       â”‚
-â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
-         â†“
-    [Ejecutar migraciÃ³n]
-         â†“
-Estado DESPUÃ‰S:
-â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-â”‚ tematicas (SIN usuario_id, globales)     â”‚
-â”‚ - TecnologÃ­a                             â”‚
-â”‚ - Ciencias                               â”‚
-â”‚ - Otros                                  â”‚
-â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
-â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-â”‚ subtematicas (8 subcategorÃ­as fijas)     â”‚
-â”‚ - Inteligencia Artificial                â”‚
-â”‚ - Redes                                  â”‚
-â”‚ - BiologÃ­a                               â”‚
-â”‚ - etc...                                 â”‚
-â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+┌──────────────────────────────────────────┐
+│ tematicas (con usuario_id, datos viejos) │
+│ - Juan's IA                              │
+│ - Juan's Redes                           │
+│ - Maria's IA (diferente)                 │
+│ - Maria's Ciencias                       │
+└──────────────────────────────────────────┘
+         ↓
+    [Ejecutar migración]
+         ↓
+Estado DESPUÉS:
+┌──────────────────────────────────────────┐
+│ tematicas (SIN usuario_id, globales)     │
+│ - Tecnología                             │
+│ - Ciencias                               │
+│ - Otros                                  │
+└──────────────────────────────────────────┘
+┌──────────────────────────────────────────┐
+│ subtematicas (8 subcategorías fijas)     │
+│ - Inteligencia Artificial                │
+│ - Redes                                  │
+│ - Biología                               │
+│ - etc...                                 │
+└──────────────────────────────────────────┘
 ```
 
 ---
 
-## ðŸŽ¯ VERIFICACIÃ“N DESPUÃ‰S DE MIGRAR
+## 🎯 VERIFICACIÓN DESPUÉS DE MIGRAR
 
 ```sql
 -- 1. Verificar que usuario_id fue removido
 SELECT column_name FROM information_schema.columns
 WHERE table_name = 'tematicas';
--- NO debe mostrar usuario_id âœ…
+-- NO debe mostrar usuario_id ✅
 
 -- 2. Verificar que hay 3 tematicas globales
 SELECT * FROM tematicas;
 -- Resultado esperado:
--- id â”‚ nombre      â”‚ es_general
--- â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
---  1 â”‚ TecnologÃ­a  â”‚ false
---  2 â”‚ Ciencias    â”‚ false
---  3 â”‚ Otros       â”‚ true
+-- id │ nombre      │ es_general
+-- ───┼─────────────┼───────────
+--  1 │ Tecnología  │ false
+--  2 │ Ciencias    │ false
+--  3 │ Otros       │ true
 
 -- 3. Verificar que hay 8 subtematicas
 SELECT t.nombre, s.nombre FROM subtematicas s
@@ -330,37 +330,38 @@ JOIN tematicas t ON t.id = s.tematica_id;
 
 -- 4. Verificar vista funciona
 SELECT DISTINCT username, tematica FROM vista_arbol_usuario;
--- Resultado esperado: Mismo catÃ¡logo para todos
+-- Resultado esperado: Mismo catálogo para todos
 ```
 
 ---
 
-## âš ï¸ PUNTOS CRÃTICOS DURANTE MIGRACIÃ“N
+## ⚠️ PUNTOS CRÍTICOS DURANTE MIGRACIÓN
 
 ```
-ðŸ”´ CRÃTICO 1: DELETE de tematicas viejas
-   â†’ Elimina datos per-usuario
-   â†’ Pero no toca documentos (CASCADE no aplica aquÃ­)
-   â†’ Los documentos quedan "huÃ©rfanos" si su FK apunta a
+🔴 CRÍTICO 1: DELETE de tematicas viejas
+   → Elimina datos per-usuario
+   → Pero no toca documentos (CASCADE no aplica aquí)
+   → Los documentos quedan "huérfanos" si su FK apunta a
      una tematica que se borra
 
-ðŸ”´ CRÃTICO 2: Remover usuario_id
-   â†’ Las vistas viejas se rompen
-   â†’ Se han actualizado en el archivo
+🔴 CRÍTICO 2: Remover usuario_id
+   → Las vistas viejas se rompen
+   → Se han actualizado en el archivo
 
-ðŸ”´ CRÃTICO 3: Orden de operaciones
-   â†’ PRIMERO: Remover constraints
-   â†’ LUEGO: Borrar datos viejos
-   â†’ LUEGO: Remover columna
-   â†’ FINALMENTE: Insertar datos nuevos
+🔴 CRÍTICO 3: Orden de operaciones
+   → PRIMERO: Remover constraints
+   → LUEGO: Borrar datos viejos
+   → LUEGO: Remover columna
+   → FINALMENTE: Insertar datos nuevos
 
-âœ… SOLUCIÃ“N: El script MIGRACION_CATALOGO_GLOBAL.sql
+✅ SOLUCIÓN: El script MIGRACION_CATALOGO_GLOBAL.sql
    lo hace todo en orden correcto
 ```
 
 ---
 
-**Â¿Necesitas mÃ¡s detalles?** Ver:
+**¿Necesitas más detalles?** Ver:
 - `MIGRACION_CATALOGO_GLOBAL.sql` - Script completo
 - `GUIA_APLICAR_CAMBIOS_SUPABASE.md` - Instrucciones paso a paso
+
 

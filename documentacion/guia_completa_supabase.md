@@ -52,7 +52,7 @@ En Supabase dashboard:
 
 ### 3.1 Ir a Project Settings
 En Supabase:
-- Click en gear icon (arriba a la derecha) â†’ "Project Settings"
+- Click en gear icon (arriba a la derecha) → "Project Settings"
 - Click en "API" en el menu izquierdo
 
 ### 3.2 Copiar credenciales
@@ -113,7 +113,7 @@ if usuario:
 
 ### 5.2 En master/consensus.py
 
-**ANTES** (implÃ­cito en JSON):
+**ANTES** (implícito en JSON):
 ```python
 # Guardar votos en memoria
 votos = {}
@@ -252,7 +252,7 @@ async def upload_documento(file: UploadFile = File(...), token: str = Header(...
     # 1. Obtener usuario del token
     usuario = obtener_usuario_del_token(token)
     if not usuario:
-        raise HTTPException(status_code=401, detail="Token invÃ¡lido")
+        raise HTTPException(status_code=401, detail="Token inválido")
     
     # 2. Validar archivo
     if not file.filename.endswith('.pdf'):
@@ -381,7 +381,7 @@ Tematica General ID: 660e8400-e29b-41d4-a716-446655440001
 
 ### Error: "Unauthorized"
 **Causa**: Anon Key no tiene permisos
-**Solucion**: En Supabase â†’ Settings â†’ Auth â†’ Policies, verificar RLS (Row Level Security) deshabilitado para desarrollo
+**Solucion**: En Supabase → Settings → Auth → Policies, verificar RLS (Row Level Security) deshabilitado para desarrollo
 
 ### Timeout en operaciones
 **Causa**: Red lenta o Supabase lejos
@@ -403,4 +403,5 @@ db = create_client(SUPABASE_URL, SUPABASE_KEY, timeout=10)
 4. **Replicacion**: Registra en 3 nodos. Usar `marcar_nodo_verificado()` cuando sync.py confirme el archivo existe.
 
 5. **Liderazgo**: El trigger auto-actualiza `ultimo_heartbeat` al hacer UPDATE. No hay que hacerlo manualmente.
+
 

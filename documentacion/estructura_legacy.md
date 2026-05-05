@@ -6,39 +6,39 @@ Este documento define la estructura oficial de carpetas y responsabilidades del 
 
 ```text
 clasificador-final/
-â”œâ”€â”€ master/
-â”‚   â”œâ”€â”€ __init__.py
-â”‚   â”œâ”€â”€ main.py
-â”‚   â”œâ”€â”€ routes.py
-â”‚   â”œâ”€â”€ auth.py
-â”‚   â”œâ”€â”€ gateway.py
-â”‚   â”œâ”€â”€ consensus.py
-â”‚   â”œâ”€â”€ adapter.py
-â”‚   â”œâ”€â”€ database.py
-â”‚   â”œâ”€â”€ deletion_coordinator.py
-â”‚   â””â”€â”€ apa.py
-â”œâ”€â”€ worker/
-â”‚   â”œâ”€â”€ __init__.py
-â”‚   â”œâ”€â”€ main.py
-â”‚   â”œâ”€â”€ extractor.py
-â”‚   â”œâ”€â”€ classifier.py
-â”‚   â””â”€â”€ sync.py
-â”œâ”€â”€ shared/
-â”‚   â”œâ”€â”€ __init__.py
-â”‚   â”œâ”€â”€ election.py
-â”‚   â””â”€â”€ leader_db.py
-â”œâ”€â”€ metadata/
-â”‚   â””â”€â”€ (obsoleto: no usado para persistencia de negocio)
-â”œâ”€â”€ storage/
-â”‚   â”œâ”€â”€ node1/
-â”‚   â”œâ”€â”€ node2/
-â”‚   â””â”€â”€ node3/
-â”œâ”€â”€ frontend/
-â”‚   â”œâ”€â”€ src/
-â”‚   â””â”€â”€ README_FRONTEND.md
-â”œâ”€â”€ requirements.txt
-â”œâ”€â”€ README.md
-â””â”€â”€ CRONOGRAMA.md
+├── master/
+│   ├── __init__.py
+│   ├── main.py
+│   ├── routes.py
+│   ├── auth.py
+│   ├── gateway.py
+│   ├── consensus.py
+│   ├── adapter.py
+│   ├── database.py
+│   ├── deletion_coordinator.py
+│   └── apa.py
+├── worker/
+│   ├── __init__.py
+│   ├── main.py
+│   ├── extractor.py
+│   ├── classifier.py
+│   └── sync.py
+├── shared/
+│   ├── __init__.py
+│   ├── election.py
+│   └── leader_db.py
+├── metadata/
+│   └── (obsoleto: no usado para persistencia de negocio)
+├── storage/
+│   ├── node1/
+│   ├── node2/
+│   └── node3/
+├── frontend/
+│   ├── src/
+│   └── README_FRONTEND.md
+├── requirements.txt
+├── README.md
+└── CRONOGRAMA.md
 ```
 
 ## Responsabilidades por carpeta
@@ -68,4 +68,5 @@ clasificador-final/
 - Las rutas de negocio se centralizan en master/routes.py.
 - El estado de liderazgo se mantiene fuera de la capa HTTP en shared.
 - La documentacion tecnica y operativa se mantiene separada.
+
 

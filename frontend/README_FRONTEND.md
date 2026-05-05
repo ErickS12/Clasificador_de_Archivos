@@ -1,13 +1,13 @@
 ﻿# Frontend del Clasificador Distribuido
 
-Guia de integracion del cliente web con la API del sistema.
+Guía de integración del cliente web con la API del sistema.
 
 ## Stack recomendado
 
 - Vite + React
 - React Router
 - Axios
-- Context API o Zustand para estado de autenticacion
+- Context API o Zustand para estado de autenticación
 
 ## Estructura sugerida
 
@@ -30,7 +30,7 @@ src/
     Navbar.jsx
 ```
 
-## Configuracion de API
+## Configuración de API
 
 Archivo recomendado en src/api/client.js:
 
@@ -57,15 +57,15 @@ VITE_API_URL=http://localhost:8000
 ## Vistas funcionales
 
 - Login y registro
-- Dashboard de usuario para carga, listado, descarga y eliminacion
-- Vista de clasificacion con votos por nodo
-- Panel administrativo para gestion de usuarios
+- Dashboard de usuario para carga, listado, descarga y eliminación
+- Vista de clasificación con votos por nodo
+- Panel administrativo para gestión de usuarios
 
 ## Flujo recomendado
 
 1. Usuario inicia sesion y guarda token
 2. Consulta categorias globales disponibles
-3. Sube PDF y visualiza resultado de clasificacion
+3. Sube PDF y visualiza resultado de clasificación
 4. Consulta listado de documentos
 5. Descarga o elimina documentos segun permisos
 

@@ -1,60 +1,60 @@
-﻿# Recomendaciones PrÃ¡cticas â€” Schema Supabase
+﻿# Recomendaciones Prácticas — Schema Supabase
 
-## ðŸŽ¯ RESUMEN EJECUTIVO
+## 🎯 RESUMEN EJECUTIVO
 
-Tu schema nuevo es **infinitamente mejor** que el stub. AquÃ­ hay lo que necesitas hacer:
+Tu schema nuevo es **infinitamente mejor** que el stub. Aquí hay lo que necesitas hacer:
 
 ---
 
-## âœ… FASE 1: ImplementaciÃ³n Base (CRÃTICA)
+## ✅ FASE 1: Implementación Base (CRÍTICA)
 
-### 1ï¸âƒ£ Ejecutar el SQL completo en Supabase
+### 1️⃣ Ejecutar el SQL completo en Supabase
 
 Copia todo el SQL del nuevo schema en:
-`Supabase â†’ Tu Proyecto â†’ SQL Editor â†’ Pega TODO y Ejecuta`
+`Supabase → Tu Proyecto → SQL Editor → Pega TODO y Ejecuta`
 
 El schema incluye:
-- âœ… 9 tablas normalizadas
-- âœ… Ãndices optimizados
-- âœ… 1 trigger automÃ¡tico (crear "General" al registrar usuario)
-- âœ… 3 vistas para queries complejas
+- ✅ 9 tablas normalizadas
+- ✅ Índices optimizados
+- ✅ 1 trigger automático (crear "General" al registrar usuario)
+- ✅ 3 vistas para queries complejas
 
-### 2ï¸âƒ£ Agregar 4 Tablas CrÃ­ticas
+### 2️⃣ Agregar 4 Tablas Críticas
 
 Copia el SQL de `SCHEMA_SUPABASE_OPTIMIZADO.md`:
 
-**A. `auditoria_documentos`** (QuiÃ©n clasificÃ³, cuÃ¡ndo, resultado)
+**A. `auditoria_documentos`** (Quién clasificó, cuándo, resultado)
 ```
-Prioridad: ðŸ”´ ALTA
-Usa para: Debugging de clasificaciones errÃ³neas
+Prioridad: 🔴 ALTA
+Usa para: Debugging de clasificaciones erróneas
 ```
 
 **B. `logs_errores_clasificacion`** (Rastrear timeouts, fallos)
 ```
-Prioridad: ðŸŸ¡ MEDIA
+Prioridad: 🟡 MEDIA
 Usa para: Monitoreo de workers
 ```
 
-**C. `cuotas_usuario`** (LÃ­mites de almacenamiento)
+**C. `cuotas_usuario`** (Límites de almacenamiento)
 ```
-Prioridad: ðŸŸ¡ MEDIA
-Usa para: Cobro futuro / lÃ­mites SaaS
-```
-
-**D. `sincronizacion_nodos`** (Verificar integridad de replicaciÃ³n)
-```
-Prioridad: ðŸŸ¢ BAJA (despuÃ©s)
-Usa para: Validar que los 3 nodos tienen copias idÃ©nticas
+Prioridad: 🟡 MEDIA
+Usa para: Cobro futuro / límites SaaS
 ```
 
-### 3ï¸âƒ£ Mejorar 3 Tablas Existentes
+**D. `sincronizacion_nodos`** (Verificar integridad de replicación)
+```
+Prioridad: 🟢 BAJA (después)
+Usa para: Validar que los 3 nodos tienen copias idénticas
+```
+
+### 3️⃣ Mejorar 3 Tablas Existentes
 
 **Tabla `documentos`:**
 - Agregar: `hash_original`, `paginas`, `estado`, `confianza_clasificacion`
 - Quitar: Nada (backward compatible)
 
 **Tabla `consenso_votos`:**
-- Renombrar: `nodo` â†’ `nodo_worker` (claridad)
+- Renombrar: `nodo` → `nodo_worker` (claridad)
 - Agregar: `confianza_worker` (para debugging)
 
 **Tabla `lider_actual`:**
@@ -63,11 +63,11 @@ Usa para: Validar que los 3 nodos tienen copias idÃ©nticas
 
 ---
 
-## ðŸ“‹ FASE 2: IntegraciÃ³n con Code (1-2 dÃ­as)
+## 📋 FASE 2: Integración con Code (1-2 días)
 
 ### Actualizar `master/database.py`
 
-âœ… **YA HECHO** - El archivo ya tiene 60+ funciones:
+✅ **YA HECHO** - El archivo ya tiene 60+ funciones:
 
 ```python
 # Usuarios
@@ -80,7 +80,7 @@ crear_token_sesion()
 obtener_token()
 revocar_token()
 
-# TemÃ¡ticas
+# Temáticas
 obtener_tematicas_usuario()
 insertar_tematica()
 
@@ -97,7 +97,7 @@ obtener_votos_documento()
 insertar_nodo_replicacion()
 obtener_nodos_documento()
 
-# AuditorÃ­a
+# Auditoría
 registrar_auditoria()
 
 # Liderazgo
@@ -128,7 +128,7 @@ from master.database import (
     registrar_auditoria
 )
 
-# DespuÃ©s de clasificar
+# Después de clasificar
 for nodo_worker, resultado in resultados.items():
     insertar_voto_consenso(
         documento_id,
@@ -137,7 +137,7 @@ for nodo_worker, resultado in resultados.items():
         resultado['confianza']
     )
 
-# Registrar auditorÃ­a
+# Registrar auditoría
 registrar_auditoria(
     documento_id,
     usuario_id,
@@ -149,7 +149,7 @@ registrar_auditoria(
 
 ---
 
-## ðŸ”§ FASE 3: ValidaciÃ³n (2-3 dÃ­as)
+## 🔧 FASE 3: Validación (2-3 días)
 
 ### 1. Pruebas unitarias para database.py
 
@@ -171,28 +171,28 @@ def test_token_sesion():
 ### 2. Pruebas de flujo end-to-end
 
 ```
-1. Registrar usuario â†’ Crear temÃ¡tica â†’ Crear subtemÃ¡tica
-2. Subir PDF â†’ Registrar documento â†’ Consenso â†’ Guardar votos
-3. Verificar auditorÃ­a â†’ Verificar nodos replicados
-4. Eliminar documento â†’ Verificar soft delete
+1. Registrar usuario → Crear temática → Crear subtemática
+2. Subir PDF → Registrar documento → Consenso → Guardar votos
+3. Verificar auditoría → Verificar nodos replicados
+4. Eliminar documento → Verificar soft delete
 ```
 
 ---
 
-## ðŸ“Š MAPPING: CÃ³digo Existente â†’ Supabase
+## 📊 MAPPING: Código Existente → Supabase
 
-| Archivo | Cambio | FunciÃ³n |
+| Archivo | Cambio | Función |
 |---------|--------|---------|
-| **auth.py** | Hash contraseÃ±a + generar token | `insertar_usuario()`, `crear_token_sesion()` |
-| **routes.py** | POST /upload â†’ registrar documento | `insertar_documento()`, `insertar_voto_consenso()` |
-| **consensus.py** | Calcular mayorÃ­a + guardar votos | `insertar_voto_consenso()`, `registrar_auditoria()` |
-| **adapter.py** | Mapear Ã¡rea â†’ subtemÃ¡tica | `actualizar_documento_clasificacion()` |
-| **election.py** | Actualizar lÃ­der | `actualizar_lider()`, `heartbeat_lider()` |
+| **auth.py** | Hash contraseña + generar token | `insertar_usuario()`, `crear_token_sesion()` |
+| **routes.py** | POST /upload → registrar documento | `insertar_documento()`, `insertar_voto_consenso()` |
+| **consensus.py** | Calcular mayoría + guardar votos | `insertar_voto_consenso()`, `registrar_auditoria()` |
+| **adapter.py** | Mapear área → subtemática | `actualizar_documento_clasificacion()` |
+| **election.py** | Actualizar líder | `actualizar_lider()`, `heartbeat_lider()` |
 | **deletion_coordinator.py** | Borrado en 2 pasos | `marcar_documento_eliminado()` |
 
 ---
 
-## ðŸš€ CHECKLIST: Antes de ProducciÃ³n
+## 🚀 CHECKLIST: Antes de Producción
 
 - [ ] SQL ejecutado en Supabase
 - [ ] 4 tablas adicionales creadas
@@ -203,14 +203,14 @@ def test_token_sesion():
 - [ ] Tests unitarios pasan
 - [ ] Tests e2e pasan
 - [ ] Variables de entorno configuradas (SUPABASE_URL, SUPABASE_KEY)
-- [ ] Logs de auditorÃ­a generÃ¡ndose
-- [ ] Heartbeat del lÃ­der funcionando
+- [ ] Logs de auditoría generándose
+- [ ] Heartbeat del líder funcionando
 
 ---
 
-## ðŸ’¾ Env Variables Requeridas
+## 💾 Env Variables Requeridas
 
-Crear `.env` en la raÃ­z del proyecto:
+Crear `.env` en la raíz del proyecto:
 
 ```env
 SUPABASE_URL=https://xxxxx.supabase.co
@@ -220,15 +220,16 @@ DATABASE_LOG_LEVEL=INFO  # DEBUG para desarrollo
 
 ---
 
-## ðŸŽ“ Nota TÃ©cnica
+## 🎓 Nota Técnica
 
 El schema nuevo soporta:
-- âœ… AuditorÃ­a completa de cambios
-- âœ… ReplicaciÃ³n distribuida verificada
-- âœ… Tolerancia a fallos de workers (2/3 mayorÃ­a)
-- âœ… Tracking de liderazgo (HA)
-- âœ… Soft deletes (preservar historial)
-- âœ… Cuotas de usuario (preparado para billing)
+- ✅ Auditoría completa de cambios
+- ✅ Replicación distribuida verificada
+- ✅ Tolerancia a fallos de workers (2/3 mayoría)
+- ✅ Tracking de liderazgo (HA)
+- ✅ Soft deletes (preservar historial)
+- ✅ Cuotas de usuario (preparado para billing)
 
 Es production-ready. Solo necesitas integrar las funciones en los endpoints.
+
 

@@ -1,15 +1,15 @@
-﻿# Schema Supabase â€” AnÃ¡lisis & Recomendaciones
+﻿# Schema Supabase — Análisis & Recomendaciones
 
-## âœ… VEREDICTO: El schema nuevo es **100% mejor** que el stub
+## ✅ VEREDICTO: El schema nuevo es **100% mejor** que el stub
 
 ---
 
-## ðŸ”§ CAMBIOS RECOMENDADOS al Schema Nuevo
+## 🔧 CAMBIOS RECOMENDADOS al Schema Nuevo
 
-### 1. â­ AGREGAR: Tabla de AuditorÃ­a
+### 1. ⭐ AGREGAR: Tabla de Auditoría
 
 ```sql
--- Rastrear cambios en documentos (quiÃ©n clasificÃ³, cuÃ¡ndo, quÃ© consenso)
+-- Rastrear cambios en documentos (quién clasificó, cuándo, qué consenso)
 CREATE TABLE auditoria_documentos (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     documento_id    UUID NOT NULL REFERENCES documentos(id) ON DELETE CASCADE,
@@ -17,27 +17,27 @@ CREATE TABLE auditoria_documentos (
     accion          VARCHAR(50) NOT NULL, -- 'clasificacion', 'reclasificacion', 'eliminacion'
     area_anterior   VARCHAR(150),
     area_nueva      VARCHAR(150),
-    confianza       DECIMAL(3,2),  -- 0.67-1.0 (mayorÃ­a)
+    confianza       DECIMAL(3,2),  -- 0.67-1.0 (mayoría)
     realizado_en    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE INDEX idx_auditoria_documento ON auditoria_documentos(documento_id);
 ```
 
-**Por quÃ©**: Necesitas trazar por quÃ© un documento terminÃ³ en una categorÃ­a (debugging).
+**Por qué**: Necesitas trazar por qué un documento terminó en una categoría (debugging).
 
 ---
 
-### 2. â­ AGREGAR: Tabla de SincronizaciÃ³n de Nodos
+### 2. ⭐ AGREGAR: Tabla de Sincronización de Nodos
 
 ```sql
--- Rastrear quÃ© nodo tiene quÃ© archivo (para replicaciÃ³n)
+-- Rastrear qué nodo tiene qué archivo (para replicación)
 CREATE TABLE sincronizacion_nodos (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     documento_id    UUID NOT NULL REFERENCES documentos(id) ON DELETE CASCADE,
     nodo            VARCHAR(50) NOT NULL,
-    hash_archivo    TEXT,        -- SHA256 para verificaciÃ³n de integridad
-    tamaÃ±o_bytes    BIGINT,
+    hash_archivo    TEXT,        -- SHA256 para verificación de integridad
+    tamaño_bytes    BIGINT,
     sincronizado_en TIMESTAMPTZ NOT NULL DEFAULT now(),
     verificado_en   TIMESTAMPTZ
 );
@@ -46,16 +46,16 @@ CREATE INDEX idx_sync_documento ON sincronizacion_nodos(documento_id);
 CREATE INDEX idx_sync_nodo ON sincronizacion_nodos(nodo);
 ```
 
-**Por quÃ©**: Para validar que los 3 nodos tienen copias idÃ©nticas (tolerancia a fallos).
+**Por qué**: Para validar que los 3 nodos tienen copias idénticas (tolerancia a fallos).
 
 ---
 
-### 3. â­ MEJORAR: Tabla `documentos`
+### 3. ⭐ MEJORAR: Tabla `documentos`
 
 **Cambio propuesto**:
 
 ```sql
--- VersiÃ³n mejorada
+-- Versión mejorada
 CREATE TABLE documentos (
     id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     usuario_id       UUID NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
@@ -63,8 +63,8 @@ CREATE TABLE documentos (
     subtematica_id   UUID REFERENCES subtematicas(id) ON DELETE SET NULL,
     nombre_archivo   VARCHAR(255) NOT NULL,
     hash_original    TEXT,              -- SHA256 del PDF original
-    tamaÃ±o_bytes     BIGINT,            -- TamaÃ±o del archivo
-    paginas          INT,               -- NÃºmero de pÃ¡ginas
+    tamaño_bytes     BIGINT,            -- Tamaño del archivo
+    paginas          INT,               -- Número de páginas
     version          INT NOT NULL DEFAULT 1,
     estado           VARCHAR(30) NOT NULL DEFAULT 'activo', -- 'activo', 'eliminado', 'reclasificando'
     confianza_clasificacion DECIMAL(3,2),  -- 0.67-1.0
@@ -79,24 +79,24 @@ CREATE INDEX idx_documentos_subtematica ON documentos(subtematica_id);
 CREATE INDEX idx_documentos_estado      ON documentos(estado);
 ```
 
-**Por quÃ©**:
-- `hash_original`: Permite detectar si alguien resubiÃ³ el mismo archivo
-- `paginas`, `tamaÃ±o_bytes`: Para estadÃ­sticas y lÃ­mites de quota
+**Por qué**:
+- `hash_original`: Permite detectar si alguien resubió el mismo archivo
+- `paginas`, `tamaño_bytes`: Para estadísticas y límites de quota
 - `estado`: Mejor que `eliminado_en` para tracking de reclasificaciones
-- `confianza_clasificacion`: Para mostrar al usuario quÃ© tan segura es la categorizaciÃ³n
+- `confianza_clasificacion`: Para mostrar al usuario qué tan segura es la categorización
 
 ---
 
-### 4. â­ MEJORAR: Tabla `consenso_votos`
+### 4. ⭐ MEJORAR: Tabla `consenso_votos`
 
 **Cambio propuesto**:
 
 ```sql
--- VersiÃ³n mejorada
+-- Versión mejorada
 CREATE TABLE consenso_votos (
     id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     documento_id     UUID NOT NULL REFERENCES documentos(id) ON DELETE CASCADE,
-    nodo_worker      VARCHAR(50) NOT NULL,  -- RenombrÃ©: 'nodo' â†’ 'nodo_worker'
+    nodo_worker      VARCHAR(50) NOT NULL,  -- Renombré: 'nodo' → 'nodo_worker'
     area_predicha    VARCHAR(150) NOT NULL,
     confianza_worker DECIMAL(3,2) NOT NULL,  -- Confianza del worker individual
     ejecutado_en     TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -107,25 +107,25 @@ CREATE TABLE consenso_votos (
 CREATE INDEX idx_votos_documento ON consenso_votos(documento_id);
 ```
 
-**Por quÃ©**:
+**Por qué**:
 - `nodo_worker`: Clarifica que es el worker (no el nodo de almacenamiento)
 - `confianza_worker`: Para debugging de workers divergentes
-- Quitamos `area_votada` duplicado y `disponible` (eso estÃ¡ en nodos_almacenamiento)
+- Quitamos `area_votada` duplicado y `disponible` (eso está en nodos_almacenamiento)
 
 ---
 
-### 5. â­ MEJORAR: Tabla `nodos_almacenamiento`
+### 5. ⭐ MEJORAR: Tabla `nodos_almacenamiento`
 
-**VersiÃ³n clara**:
+**Versión clara**:
 
 ```sql
--- Nodos de replicaciÃ³n (storage/node1-3/)
+-- Nodos de replicación (storage/node1-3/)
 CREATE TABLE nodos_almacenamiento (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     documento_id    UUID NOT NULL REFERENCES documentos(id) ON DELETE CASCADE,
     nodo            VARCHAR(50) NOT NULL,  -- 'node1', 'node2', 'node3'
     ruta_fisica     TEXT NOT NULL,         -- Relativa a storage/ o absoluta
-    md5_archivo     TEXT,                  -- Para verificaciÃ³n post-escritura
+    md5_archivo     TEXT,                  -- Para verificación post-escritura
     activo          BOOLEAN NOT NULL DEFAULT TRUE,
     creado_en       TIMESTAMPTZ NOT NULL DEFAULT now(),
     
@@ -140,7 +140,7 @@ CREATE INDEX idx_nodos_nodo ON nodos_almacenamiento(nodo);
 
 ---
 
-### 6. â­ AGREGAR: Tabla de Cuotas/LÃ­mites de Usuario
+### 6. ⭐ AGREGAR: Tabla de Cuotas/Límites de Usuario
 
 ```sql
 CREATE TABLE cuotas_usuario (
@@ -158,9 +158,9 @@ CREATE INDEX idx_cuota_usuario ON cuotas_usuario(usuario_id);
 
 ---
 
-### 7. â­ MEJORAR: Tabla `lider_actual`
+### 7. ⭐ MEJORAR: Tabla `lider_actual`
 
-**VersiÃ³n mejorada**:
+**Versión mejorada**:
 
 ```sql
 -- Control de consenso del cluster
@@ -184,7 +184,7 @@ SET NEW.ultimo_heartbeat = now();
 
 ---
 
-### 8. â­ AGREGAR: Tabla de Logs de Errores
+### 8. ⭐ AGREGAR: Tabla de Logs de Errores
 
 ```sql
 CREATE TABLE logs_errores_clasificacion (
@@ -202,7 +202,7 @@ CREATE INDEX idx_errores_documento ON logs_errores_clasificacion(documento_id);
 
 ---
 
-## ðŸ“‹ VISTAS RECOMENDADAS
+## 📋 VISTAS RECOMENDADAS
 
 Tu schema ya tiene 3 vistas; sugiero agregar:
 
@@ -243,13 +243,13 @@ GROUP BY nodo;
 
 ---
 
-## ðŸ”„ MAPPING CON CÃ“DIGO EXISTENTE
+## 🔄 MAPPING CON CÓDIGO EXISTENTE
 
-### En `database.py` necesitarÃ­as funciones como:
+### En `database.py` necesitarías funciones como:
 
 ```python
 # Funciones que el gateway necesita
-def insertar_documento(usuario_id, tematica_id, subtematica_id, nombre_archivo, hash_archivo, tamaÃ±o):
+def insertar_documento(usuario_id, tematica_id, subtematica_id, nombre_archivo, hash_archivo, tamaño):
     """Crea registro en documentos + cuota_usuario"""
     pass
 
@@ -258,11 +258,11 @@ def insertar_voto_consenso(documento_id, nodo_worker, area_predicha, confianza):
     pass
 
 def insertar_nodo_replicacion(documento_id, nodo, ruta_fisica):
-    """Registra dÃ³nde se replicÃ³ el archivo"""
+    """Registra dónde se replicó el archivo"""
     pass
 
 def registrar_auditoria(documento_id, usuario_id, accion, area_anterior, area_nueva, confianza):
-    """AuditorÃ­a de cambios"""
+    """Auditoría de cambios"""
     pass
 
 def actualizar_heartbeat_lider(nodo_id):
@@ -272,29 +272,30 @@ def actualizar_heartbeat_lider(nodo_id):
 
 ---
 
-## âœ¨ RESUMEN: Cambios CrÃ­ticos
+## ✨ RESUMEN: Cambios Críticos
 
 | Tabla | Cambio | Prioridad |
 |-------|--------|-----------|
-| `documentos` | Agregar `hash_original`, `paginas`, `estado`, `confianza_clasificacion` | ðŸ”´ Alta |
-| `consenso_votos` | Renombrar `nodo` â†’ `nodo_worker`, agregar `confianza_worker` | ðŸŸ¡ Media |
-| â€” | **AGREGAR** `auditoria_documentos` | ðŸ”´ Alta |
-| â€” | **AGREGAR** `sincronizacion_nodos` | ðŸŸ¡ Media |
-| â€” | **AGREGAR** `cuotas_usuario` | ðŸŸ¡ Media |
-| `lider_actual` | Agregar `heartbeat_interval`, trigger de timestamp | ðŸŸ¢ Baja |
-| â€” | **AGREGAR** `logs_errores_clasificacion` | ðŸŸ¢ Baja |
+| `documentos` | Agregar `hash_original`, `paginas`, `estado`, `confianza_clasificacion` | 🔴 Alta |
+| `consenso_votos` | Renombrar `nodo` → `nodo_worker`, agregar `confianza_worker` | 🟡 Media |
+| — | **AGREGAR** `auditoria_documentos` | 🔴 Alta |
+| — | **AGREGAR** `sincronizacion_nodos` | 🟡 Media |
+| — | **AGREGAR** `cuotas_usuario` | 🟡 Media |
+| `lider_actual` | Agregar `heartbeat_interval`, trigger de timestamp | 🟢 Baja |
+| — | **AGREGAR** `logs_errores_clasificacion` | 🟢 Baja |
 
 ---
 
-## ðŸŽ¯ CONCLUSIÃ“N
+## 🎯 CONCLUSIÓN
 
 **El schema nuevo es infinitamente mejor** que el stub de database.py porque:
 
-1. âœ… Normaliza roles, tokens, jerarquÃ­a
-2. âœ… Hace explicito lo que estaba implÃ­cito en JSON
-3. âœ… Permite auditorÃ­a y debugging
-4. âœ… Soporta replicaciÃ³n distribuida
-5. âœ… Tiene triggers inteligentes
+1. ✅ Normaliza roles, tokens, jerarquía
+2. ✅ Hace explicito lo que estaba implícito en JSON
+3. ✅ Permite auditoría y debugging
+4. ✅ Soporta replicación distribuida
+5. ✅ Tiene triggers inteligentes
 
-**Con los cambios propuestos arriba**, tendrÃ­as un schema listo para producciÃ³n.
+**Con los cambios propuestos arriba**, tendrías un schema listo para producción.
+
 

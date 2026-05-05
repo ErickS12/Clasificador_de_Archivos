@@ -22,7 +22,7 @@ import shutil, os, json, asyncio
 from .extractor import extraer_texto
 from .classifier import clasificar
 from shared.election import iniciar as iniciar_eleccion, yo_soy_lider, obtener_url_lider
-from shared.sync import sincronizar_borrados_pendientes
+from shared.sync import sincronizar_borrados_pendientes, reintentar_borrados_periodicos
 from master.routes import router as router_maestro
 
 app = FastAPI()
