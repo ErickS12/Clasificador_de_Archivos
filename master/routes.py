@@ -5,11 +5,13 @@ Persistencia 100% en Supabase para autenticacion, areas y metadatos.
 
 from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, UploadFile, File, HTTPException, Header, Depends, Query
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 import hashlib
 import os
 import shutil
 from typing import Any, Optional
+import requests
+import io
 
 from master.auth import hashear_contrasena, verificar_contrasena, generar_token, requiere_admin
 from master.gateway import validar_carga
@@ -43,6 +45,7 @@ from master.database import (
     obtener_nodos_documento,
     marcar_nodo_inactivo,
 )
+from shared.cluster_config import obtener_nodos_cluster, obtener_url_nodo
 
 router = APIRouter()
 
@@ -444,7 +447,18 @@ def descargar_archivo(
     subarea: Optional[str] = Query(None),
     auth: tuple = Depends(usuario_actual),
 ):
-    """Descargar un archivo del usuario."""
+    """
+    Descargar un archivo del usuario.
+    
+    ✅ PATRÓN REVERSE PROXY:
+    1. El cliente pide el archivo al Líder
+    2. El Líder consulta en BD qué nodos lo tienen
+    3. El Líder hace HTTP request a un worker: /serve-file?...
+    4. El Líder streamea la respuesta del worker al cliente
+    5. Si el worker falla, intenta con el siguiente nodo
+    
+    Esto garantiza que el archivo se descarga aunque el Líder no lo tenga localmente.
+    """
     nombre_usuario, datos = auth
 
     # Buscar documento del usuario con esos parámetros
@@ -477,22 +491,64 @@ def descargar_archivo(
         raise HTTPException(404, "Documento no encontrado.")
 
     documento = res.data[0]
-    nodos = obtener_nodos_documento(documento["id"])
+    nodos_documento = obtener_nodos_documento(documento["id"])
     
-    # Intentar obtener del primer nodo disponible
-    for nodo in nodos:
-        ruta = nodo.get("ruta_fisica")
-        if ruta and os.path.exists(ruta):
-            return FileResponse(ruta, media_type="application/pdf", filename=nombre_archivo)
-
-    # Fallback: buscar en disco
-    ruta_sub = subarea if subarea else ""
-    for nodo in NODOS:
-        ruta = os.path.join(BASE_ALMACENAMIENTO, nodo, nombre_usuario, area, ruta_sub, nombre_archivo)
-        if os.path.exists(ruta):
-            return FileResponse(ruta, media_type="application/pdf", filename=nombre_archivo)
-
-    raise HTTPException(404, "Archivo no encontrado en ningun nodo.")
+    if not nodos_documento:
+        raise HTTPException(404, "No hay réplicas del archivo en ningún nodo.")
+    
+    # Intentar obtener del archivo desde cada nodo (Patrón: Reverse Proxy)
+    subarea_param = subarea if subarea else ""
+    
+    for nodo_info in nodos_documento:
+        nodo_id = nodo_info.get("nodo_id")
+        
+        try:
+            # Obtener URL del nodo
+            url_nodo = obtener_url_nodo(nodo_id)
+            url_serve = f"{url_nodo}/serve-file"
+            
+            # Hacer request HTTP al worker
+            params = {
+                "nombre_usuario": nombre_usuario,
+                "area": area,
+                "subarea": subarea_param,
+                "nombre_archivo": nombre_archivo,
+            }
+            
+            respuesta = requests.get(url_serve, params=params, timeout=10, stream=True)
+            
+            if respuesta.status_code == 200:
+                # ✅ Éxito: streamear el archivo del worker al cliente
+                def generar():
+                    for chunk in respuesta.iter_content(chunk_size=8192):
+                        if chunk:
+                            yield chunk
+                
+                return StreamingResponse(
+                    generar(),
+                    media_type="application/pdf",
+                    headers={"Content-Disposition": f"attachment; filename={nombre_archivo}"}
+                )
+            elif respuesta.status_code == 404:
+                # Nodo no tiene el archivo, intentar siguiente
+                continue
+            else:
+                # Error en el nodo, intentar siguiente
+                print(f"[DOWNLOAD] Nodo {nodo_id} retornó {respuesta.status_code}")
+                continue
+        
+        except requests.exceptions.Timeout:
+            print(f"[DOWNLOAD] Timeout contactando nodo {nodo_id}")
+            continue
+        except requests.exceptions.ConnectionError:
+            print(f"[DOWNLOAD] Nodo {nodo_id} no disponible")
+            continue
+        except Exception as e:
+            print(f"[DOWNLOAD] Error con nodo {nodo_id}: {e}")
+            continue
+    
+    # Si llegamos aquí, ningún nodo respondió
+    raise HTTPException(503, "Todos los nodos están offline. Reintenta en unos momentos.")
 
 
 @router.delete("/document", tags=["documentos"])

@@ -13,11 +13,11 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Body
-from fastapi.responses import RedirectResponse, JSONResponse
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Body, Query
+from fastapi.responses import RedirectResponse, JSONResponse, FileResponse, StreamingResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
-import shutil, os, json, asyncio
+import shutil, os, json, asyncio, requests
 
 from .extractor import extraer_texto
 from .classifier import clasificar
@@ -236,3 +236,54 @@ async def iniciar_reintentos_periodicos():
     """
     print("[STARTUP] Iniciando job periódico de reintentos...")
     asyncio.create_task(reintentar_borrados_periodicos(intervalo_segundos=300))
+
+
+# ── ✅ FASE 7: Recuperación de archivos (Patrón Reverse Proxy) ────────────────
+
+@app.get("/serve-file")
+async def servir_archivo(
+    nombre_usuario: str = Query(...),
+    area: str = Query(...),
+    subarea: str = Query(default=""),
+    nombre_archivo: str = Query(...),
+):
+    """
+    Sirve un archivo del almacenamiento local de este worker.
+    
+    El LÍDER usa este endpoint como parte del patrón Reverse Proxy:
+    Cliente → Líder (/download) → Worker (/serve-file) → Cliente
+    
+    Parámetros:
+        nombre_usuario: username del propietario del archivo
+        area: nombre del área/tematica
+        subarea: nombre de la subtematica (opcional)
+        nombre_archivo: nombre del archivo PDF
+    
+    Retorna:
+        - FileResponse con el archivo si existe
+        - 404 si no encontrado
+    """
+    # Construir ruta física
+    ruta = os.path.join(
+        ALMACENAMIENTO_NODO,
+        nombre_usuario,
+        area,
+        subarea,
+        nombre_archivo
+    )
+    
+    # Validar que la ruta sea segura (no hay path traversal)
+    ruta_absoluta = os.path.abspath(ruta)
+    almacen_absoluto = os.path.abspath(ALMACENAMIENTO_NODO)
+    if not ruta_absoluta.startswith(almacen_absoluto):
+        raise HTTPException(403, "Acceso denegado: ruta inválida")
+    
+    if not os.path.exists(ruta_absoluta):
+        raise HTTPException(404, f"Archivo no encontrado: {nombre_archivo}")
+    
+    # Servir como streaming para archivos grandes
+    return FileResponse(
+        ruta_absoluta,
+        media_type="application/pdf",
+        filename=nombre_archivo
+    )
