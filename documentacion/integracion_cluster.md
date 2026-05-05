@@ -1,6 +1,6 @@
 ﻿# Documentacion de Integracion
 
-Este documento describe la integracion entre los modulos master, worker y shared.
+Este documento describe la integracion entre los modulos líder, nodo y shared.
 
 ## Vista general
 
@@ -8,7 +8,7 @@ Este documento describe la integracion entre los modulos master, worker y shared
 Cliente
   |
   v
-master/main.py (lider)
+master/main.py (líder)
   |- auth.py
   |- gateway.py
   |- consensus.py
@@ -37,17 +37,17 @@ shared/
 ### Clasificacion distribuida
 
 1. upload valida archivo.
-2. consensus envia PDF a workers.
-3. workers procesan y responden area.
+2. consensus envia PDF a nodos.
+3. nodos procesan y responden area.
 4. consensus calcula mayoria.
-5. master guarda archivo y metadatos.
+5. líder guarda archivo y metadatos.
 6. adapter construye respuesta final.
 
 ### Descarga y consistencia
 
 1. cliente solicita download.
-2. master consulta metadatos.
-3. master busca archivo por nodos de storage.
+2. líder consulta metadatos.
+3. líder busca archivo por nodos de storage.
 4. devuelve archivo disponible.
 
 ### Liderazgo
@@ -59,7 +59,7 @@ shared/
 
 ## Contratos entre modulos
 
-- consensus <-> worker:
+-- consensus <-> nodo:
   - request: archivo + categorias permitidas
   - response: area clasificada
 
@@ -89,7 +89,6 @@ shared/
 
 ## Puntos de cierre tecnico
 
-- completar borrado coordinado entre nodos
-- completar sincronizacion de arranque en workers
+- completar sincronizacion de arranque en nodos
 - ampliar pruebas de recuperacion ante falla de nodo
 

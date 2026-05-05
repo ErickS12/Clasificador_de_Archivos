@@ -9,8 +9,8 @@
 
 Se reemplazó el patrón **PULL (polling cada 5 minutos)** con un patrón **PUSH (notificación inmediata)**:
 
-- **ANTES**: Master pregunta cada 5 minutos "¿Node3 estás vivo?" → Lentitud (hasta 5 min de inconsistencia)
-- **AHORA**: Node3 se levanta → Notifica al master "Estoy vivo" → Sincroniza en ~1 segundo
+- **ANTES**: el líder pregunta cada 5 minutos "¿Node3 estás vivo?" → Lentitud (hasta 5 min de inconsistencia)
+- **AHORA**: Node3 se levanta → Notifica al líder "Estoy vivo" → Sincroniza en ~1 segundo
 
 ---
 
@@ -22,7 +22,7 @@ Se reemplazó el patrón **PULL (polling cada 5 minutos)** con un patrón **PUSH
 @router.post("/node-startup", tags=["cluster"])
 def node_startup(node_name: str):
     """
-    Called cuando un worker se levanta.
+    Called cuando un nodo se levanta.
     Retorna los borrados pendientes para este nodo.
     """
     # SELECT FROM borrados_pendientes 
@@ -35,9 +35,9 @@ def node_startup(node_name: str):
 ```
 
 **Cambios**:
-- ✅ Nuevo endpoint sin autenticación (solo para workers internos)
+- ✅ Nuevo endpoint sin autenticación (solo para nodos internos)
 - ✅ Devuelve lista de archivos pendientes para sincronizar
-- ✅ Permite que workers se notifiquen al master
+- ✅ Permite que nodos se notifiquen al líder
 
 ---
 
@@ -50,7 +50,7 @@ async def evento_inicio():
     asyncio.create_task(sincronizar_con_master_al_startup())
 
 async def sincronizar_con_master_al_startup():
-    """Patrón PUSH: Worker notifica al master cuando se levanta"""
+    """Patrón PUSH: Nodo notifica al líder cuando se levanta"""
     try:
         # 1. Notificar al master
         resp = requests.post(
@@ -69,9 +69,9 @@ async def sincronizar_con_master_al_startup():
 
 **Cambios**:
 - ✅ Eliminada la línea: `reintentar_borrados_periodicos(intervalo_segundos=300)`
-- ✅ Nueva lógica de notificación al master
+- ✅ Nueva lógica de notificación al líder
 - ✅ Sincronización con `lista_previa` (patrón PUSH)
-- ✅ Fallback automático si master offline
+- ✅ Fallback automático si el líder está offline
 
 ---
 
@@ -85,13 +85,13 @@ async def sincronizar_borrados_pendientes(
     """
     Sincroniza borrados pendientes.
     
-    Puede funcionar de dos maneras:
-      A) Con lista_previa: Master envió (patrón PUSH)
-      B) Sin lista_previa: Lee de BD (patrón PULL, fallback)
+        Puede funcionar de dos maneras:
+            A) Con lista_previa: el líder envió (patrón PUSH)
+            B) Sin lista_previa: Lee de BD (patrón PULL, fallback)
     """
     if lista_previa:
         pendientes = lista_previa
-        print(f"[SYNC] Patrón PUSH: Master envió {len(pendientes)} borrados")
+        print(f"[SYNC] Patrón PUSH: líder envió {len(pendientes)} borrados")
     else:
         # PULL: leer de BD (fallback)
         resp = db.table("borrados_pendientes")...
@@ -145,16 +145,16 @@ t=3:47   Sincronización inmediata
 
 ## 🛡️ Manejo de Errores
 
-### Caso 1: Master Online
+### Caso 1: Líder Online
 ```
-Worker startup → POST /node-startup → Master devuelve lista
+Nodo startup → POST /node-startup → líder devuelve lista
                     ↓
          Sincronización PUSH (inmediata)
 ```
 
-### Caso 2: Master Offline (Timeout)
+### Caso 2: Líder Offline (Timeout)
 ```
-Worker startup → POST /node-startup → Timeout (5 seg)
+Nodo startup → POST /node-startup → Timeout (5 seg)
                     ↓
          Fallback: Sincronización PULL (desde BD local)
 ```
@@ -170,7 +170,7 @@ Intenta borrar → Archivo no existe → "Ya limpio" (ok)
 
 ## 📋 Configuración Requerida
 
-En `.env` de cada worker:
+En `.env` de cada nodo:
 ```bash
 MASTER_URL=http://192.168.1.100:8000  # IP del master en LAN
 WORKER_NODE_NAME=node1                 # o node2, node3
@@ -184,8 +184,8 @@ ALMACENAMIENTO_NODO=../storage/node1   # ruta local del almacenamiento
 ### Logs Esperados al Startup
 
 ```
-[STARTUP-SYNC] Master envió 2 borrados pendientes
-[SYNC] Patrón PUSH: Master envió 2 borrados
+[STARTUP-SYNC] Líder envió 2 borrados pendientes
+[SYNC] Patrón PUSH: líder envió 2 borrados
 [SYNC] ✓ Borrado: ALMACENAMIENTO_NODO/erick/Redes/...
 [SYNC] ✓ Entrada 550e8400-... completada
 [SYNC] Resumen: 2 ✓, 0 ⟳, 0 ✗
@@ -194,7 +194,7 @@ ALMACENAMIENTO_NODO=../storage/node1   # ruta local del almacenamiento
 ### Logs si Master Offline
 
 ```
-[STARTUP-SYNC] Master offline (timeout) - sincronizando fallback desde BD
+[STARTUP-SYNC] Líder offline (timeout) - sincronizando fallback desde BD
 [SYNC] Patrón PULL: BD tiene 2 borrados
 [SYNC] ✓ Entrada 550e8400-... completada
 [SYNC] Resumen: 2 ✓, 0 ⟳, 0 ✗

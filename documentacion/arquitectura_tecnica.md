@@ -5,8 +5,8 @@
 
 La solucion se compone de tres dominios:
 
-- master: coordinacion de negocio y exposicion de API
-- worker: procesamiento de documentos
+- líder: coordinacion de negocio y exposicion de API
+- nodo: procesamiento de documentos
 - shared: liderazgo y coordinacion de cluster
 
 ## 2. Estructura de modulos
@@ -43,7 +43,7 @@ shared/
 - startup del cluster
 - rutas de negocio
 
-[master/routes.py](master/routes.py) permite reutilizar el mismo router cuando un worker asume liderazgo.
+[master/routes.py](master/routes.py) permite reutilizar el mismo router cuando un nodo asume liderazgo.
 
 ## 4. Seguridad
 
@@ -66,10 +66,10 @@ shared/
 
 [master/consensus.py](master/consensus.py):
 
-- distribuye procesamiento a workers
+- distribuye procesamiento a nodos
 - recolecta respuestas
 - calcula mayoria
-- degrada de forma controlada cuando un worker no responde
+- degrada de forma controlada cuando un nodo no responde
 
 ## 7. Adaptador de respuestas
 
@@ -148,7 +148,7 @@ No hay endpoints activos para administrar áreas desde la API.
 
 ## 13. Operacion recomendada
 
-1. iniciar workers
+1. iniciar nodos
 2. iniciar nodo lider
 3. validar /docs
 4. ejecutar flujo register -> login -> upload -> files -> download
@@ -156,6 +156,6 @@ No hay endpoints activos para administrar áreas desde la API.
 ## 14. Pendientes de cierre tecnico
 
 - consolidar borrado coordinado entre nodos
-- consolidar sincronizacion de arranque en workers
-- pruebas de resiliencia en entorno LAN
+- consolidar sincronizacion de arranque en nodos
+ - pruebas de resiliencia en entorno LAN
 

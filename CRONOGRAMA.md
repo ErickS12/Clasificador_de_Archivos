@@ -10,10 +10,10 @@ Leyenda:
 
 Estado: Completo
 
-- Worker de procesamiento PDF activo
+ - Nodo de procesamiento PDF activo
 - Extraccion de texto con PyMuPDF
 - Clasificacion con TF-IDF + LogisticRegression
-- Consenso por mayoria entre workers
+- Consenso por mayoria entre nodos
 - Replicacion de archivos en tres nodos
 
 ## Bloque B: API de Negocio y Seguridad
@@ -35,7 +35,7 @@ Estado: En curso
 - Redireccion automatica al lider activo
 - Registro de lider en Supabase
 - Pendiente de cierre:
-  - sincronizacion completa de arranque en workers
+  - sincronizacion completa de arranque en nodos
   - borrado coordinado en dos fases entre nodos
 
 Nota de estado real: estas dos partes siguen solo diseñadas, no implementadas del todo en el codigo actual.

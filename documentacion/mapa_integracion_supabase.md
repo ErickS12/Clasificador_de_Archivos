@@ -13,11 +13,11 @@
                  ┌─────────────┴─────────────┐
                  │                           │
        ┌─────────▼──────────┐      ┌────────▼──────────┐
-       │  MASTER            │      │  WORKERS          │
-       │  (Orquestador)     │      │  (Clasificación)  │
+    │  LIDER             │      │  NODOS            │
+    │  (Orquestador)     │      │  (Clasificación)  │
        │                    │      │                   │
-       │ main.py            │      │ main.py (x3)      │
-       │ routes.py ◄────────┼──────┼─ classifier.py    │
+    │ main.py            │      │ main.py (x3)      │
+    │ routes.py ◄────────┼──────┼─ classifier.py    │
        │ gateway.py         │      │ sync.py           │
        │ auth.py            │      │                   │
        │ consensus.py       │      │ localhost:5001    │
@@ -39,9 +39,9 @@ FLUJO DE DATOS:
 1. Usuario carga PDF en /upload
 2. master/routes.py recibe, llama database.insertar_documento()
 3. Replica en 3 nodos con database.insertar_nodo_replicacion()
-4. consensus.clasificar_con_consenso() contacta 3 workers
-5. Cada worker predice (predict) → registrado con database.insertar_voto_consenso()
-6. master calcula mayoría, llama database.actualizar_documento_clasificacion()
+4. consensus.clasificar_con_consenso() contacta 3 nodos
+5. Cada nodo predice (predict) → registrado con database.insertar_voto_consenso()
+6. líder calcula mayoría, llama database.actualizar_documento_clasificacion()
 7. Todo persistido en Supabase (HA + auditable)
 +- Ejecutar test_conexion.py para validar conexi�n
  [ ] test_conexion.py pasa ?

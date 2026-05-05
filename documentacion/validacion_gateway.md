@@ -44,9 +44,9 @@ Orden funcional:
 
 1. Cliente envia POST /upload.
 2. validar_carga revisa archivo.
-3. Si es valido, master invoca consenso.
-4. Workers devuelven clasificacion.
-5. Master calcula mayoria.
+3. Si es valido, el líder invoca consenso.
+4. Nodos devuelven clasificacion.
+5. El líder calcula mayoria.
 6. Se almacena archivo y metadatos.
 7. Respuesta se adapta para cliente.
 8. LoggingMiddleware registra resultado.
@@ -55,11 +55,11 @@ Orden funcional:
 
 - 400/422: entrada invalida
 - 401/403: autenticacion o permisos
-- 503: indisponibilidad de workers o lider
+- 503: indisponibilidad de nodos o líder
 
 ## Consideraciones operativas
 
-- Mantener la validacion en borde evita carga innecesaria a workers.
+- Mantener la validacion en borde evita carga innecesaria a nodos.
 - El logging no debe incluir datos sensibles.
 - Ante errores de red, se recomienda incluir request-id para trazabilidad futura.
 

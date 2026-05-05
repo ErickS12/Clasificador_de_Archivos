@@ -23,7 +23,7 @@
 
 ### ✅ Diagrama de Flujo
 ```
-Usuario     Supabase (Nube)      Master (Orquestador)    Workers (3x)     Storage (3 nodos)
+Usuario     Supabase (Nube)      Líder (Orquestador)    Nodos (3x)     Storage (3 nodos)
   │             │                       │                    │                  │
   ├─POST /upload──────────────────────►│                      │                  │
   │             │                    ┌─►├──insertar_documento──┼──────────────────┤
@@ -56,7 +56,7 @@ SCHEMA_SUPABASE_FINAL.sql
 ├─ subtematicas → jerarquía nivel 2
 ├─ documentos → archivos cargados
 ├─ nodos_almacenamiento → replicación tracking
-├─ consenso_votos → votos 3 workers
+├─ consenso_votos → votos 3 nodos
 ├─ lider_actual → singleton para HA
 ├─ 2 triggers automáticos
 ├─ 4 vistas para consultas complejas

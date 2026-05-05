@@ -15,7 +15,7 @@ Este indice organiza la documentacion tecnica y funcional del proyecto con la ar
 
 - [README.md](README.md): vision general, instalacion y ejecucion
 - [resumen_arquitectura.md](resumen_arquitectura.md): panorama de arquitectura y operaciones
-- [integracion_cluster.md](integracion_cluster.md): interaccion entre master, worker y shared
+- [integracion_cluster.md](integracion_cluster.md): interaccion entre líder, nodo y shared
 - [arquitectura_tecnica.md](arquitectura_tecnica.md): detalle de modulos, endpoints y decisiones de implementacion
 - [validacion_gateway.md](validacion_gateway.md): validaciones, flujo de carga y adaptacion de respuesta
 - [diagramas_arquitectura.md](diagramas_arquitectura.md): diagramas de despliegue, secuencia y flujo
@@ -30,7 +30,7 @@ Este indice organiza la documentacion tecnica y funcional del proyecto con la ar
 - [worker/main.py](worker/main.py): procesamiento de PDF y rutas locales de nodo
 - [shared/election.py](shared/election.py): eleccion de lider y heartbeat
 - [shared/leader_db.py](shared/leader_db.py): persistencia del lider activo
-- [master/consensus.py](master/consensus.py): clasificacion por mayoria de workers
+- [master/consensus.py](master/consensus.py): clasificacion por mayoria de nodos
 
 ## Endpoints centrales
 

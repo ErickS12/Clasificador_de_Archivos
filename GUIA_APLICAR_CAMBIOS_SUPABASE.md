@@ -6,7 +6,7 @@
 |----------|--------------|-----------------|
 | Archivo SQL | ✅ ACTUALIZADO (catálogo global) | ❌ DESACTUALIZADO (por usuario) |
 | Python code | ✅ ACTUALIZADO | - |
-| Workers | ✅ ACTUALIZADO | - |
+| Nodos | ✅ ACTUALIZADO | - |
 | Base de Datos | ❌ DESINCRONIZADA | Contiene estructura vieja |
 
 **Acción necesaria:** Aplicar la migración en Supabase para sincronizar con el código.
@@ -218,7 +218,7 @@ DELETE FROM tematicas WHERE nombre IN ('Tecnología', 'Ciencias', 'Otros');
 - [ ] GET /files muestra documentos del usuario
 - [ ] Logs no muestran errores de FK
 - [ ] Prueba con 2-3 PDFs
-- [ ] Revisar consenso en logs (3 workers prediciendo)
+ - [ ] Revisar consenso en logs (3 nodos prediciendo)
 
 ---
 
@@ -231,7 +231,7 @@ Si tienes problemas:
    # En terminal del maestro
    tail -f logs/master.log
    
-   # En terminal de workers
+  # En terminal de nodos
    tail -f logs/worker1.log
    ```
 

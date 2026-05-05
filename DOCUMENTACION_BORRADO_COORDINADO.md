@@ -51,10 +51,10 @@ Con EVENTUAL CONSISTENCY (implementado):
 FLUJO EN TRES PASOS
 ───────────────────
 
-PASO 1: BORRADO FÍSICO (paralelo en todos los workers)
+PASO 1: BORRADO FÍSICO (paralelo en todos los nodos de procesamiento)
    Usuario presiona "Eliminar"
        ↓
-   Master envía POST /delete-files a node1, node2, node3
+  Líder envía POST /delete-files a node1, node2, node3
        ↓
    ✓ node1 → archivo borrado
    ✓ node2 → archivo borrado  
@@ -84,13 +84,13 @@ PASO 2: BORRADO LÓGICO EN BD (si 2+ exitosos)
 PASO 3: SINCRONIZACIÓN EVENTUAL (cuando node3 se levanta)
    node3 inicia → @app.on_event("startup")
        ↓
-   [NUEVO] POST /node-startup al Master (patrón PUSH)
+   [NUEVO] POST /node-startup al líder (patrón PUSH)
        ↓
-   Master responde:
+   Líder responde:
      "Tienes estos borrados pendientes: [...]"
        ↓
    [NUEVO] sincronizar_borrados_pendientes(lista_previa=...)
-   (No necesita leer de BD, ya tiene la lista del master)
+   (No necesita leer de BD, ya tiene la lista del líder)
        ↓
    Para cada archivo en la lista:
      - Intenta borrar del disco
@@ -105,7 +105,7 @@ CRONOLOGÍA
 ──────────
 
 t=0:00   Usuario presiona "Eliminar"
-t=0:01   Master envía DELETE a workers
+t=0:01   Líder envía DELETE a nodos
 t=0:02   ✓ node1 OK, ✓ node2 OK, ✗ node3 timeout
 t=0:03   registrar_borrados_pendientes("node3", ...)
 t=0:04   DELETE FROM documentos (usuario ya ve "eliminado")
@@ -115,9 +115,9 @@ t=0:05   Retorna respuesta (estado: "éxito_parcial")
 
 t=2:30   node3 se levanta
 t=2:31   worker/main.py @app.on_event("startup")
-t=2:32   [NUEVO] POST /node-startup al master
-t=2:33   Master devuelve: {"borrados_pendientes": [...]}
-t=2:34   Worker sincroniza inmediatamente
+t=2:32   [NUEVO] POST /node-startup al líder
+t=2:33   Líder devuelve: {"borrados_pendientes": [...]} 
+t=2:34   Nodo sincroniza inmediatamente
 t=2:35   Archivo borrado del disco de node3
 t=2:36   UPDATE estado='completado'
 t=2:37   ✓ Sistema 100% sincronizado (sin esperar job periódico)
@@ -204,7 +204,7 @@ NUEVA LÓGICA EN confirmar_y_purgar_base_datos:
 ─────────────────────────────
 
 FUNCIÓN 1: sincronizar_borrados_pendientes()
-  Ejecutada: al @app.on_event("startup") de cada worker
+  Ejecutada: al @app.on_event("startup") de cada nodo
   
   Flujo:
     1. SELECT FROM borrados_pendientes WHERE estado='pendiente' AND nodo_destino=MY_NODE
@@ -224,16 +224,15 @@ FUNCIÓN 1: sincronizar_borrados_pendientes()
     }
 
 
-FUNCIÓN 2: [ELIMINADO] reintentar_borrados_periodicos()
-  [CAMBIO] Ya no hay job periódico cada 5 minutos.
-  Ahora el patrón es PUSH: worker notifica al master cuando se levanta.
+FUNCIÓN 2: reintentar_borrados_periodicos()
+  Job periódico de respaldo cada 5 minutos.
+  Convive con el patrón PUSH: el nodo notifica al líder al levantarse.
   
-  Razones del cambio:
-    - 10x más rápido: ~1 segundo vs 5 minutos
-    - Menor overhead de CPU: sin polling continuo
-    - Más reactivo: sincroniza inmediatamente
+  Beneficio:
+    - El patrón PUSH sincroniza de inmediato al startup.
+    - El job periódico recupera pendientes ante fallos transitorios.
   
-  Fallback: Si master offline, worker sincroniza localmente desde BD
+  Fallback: Si líder offline, el nodo sincroniza localmente desde BD
 
 
 FUNCIÓN 3: limpiar_borrados_completados()
@@ -253,7 +252,7 @@ TABLA:
   - nombre_archivo: archivo solicitado
   - area / subarea: ubicación lógica del documento
   - estado: pendiente | procesando | completado | fallido
-  - intentos: número de reintentos del background worker
+  - intentos: número de reintentos del proceso en background
   - ultimo_error: último motivo de fallo interno
 
 RESPUESTA AL USUARIO:
@@ -278,29 +277,29 @@ NUEVOS EVENTOS:
   @app.on_event("startup")
   async def evento_inicio():
       iniciar_eleccion(app)
-      asyncio.create_task(sincronizar_con_master_al_startup())
+    asyncio.create_task(sincronizar_con_lider_al_startup())
 
-  async def sincronizar_con_master_al_startup():
-      """Patrón PUSH: Worker notifica al master cuando se levanta"""
+  async def sincronizar_con_lider_al_startup():
+    """Patrón PUSH: Nodo notifica al líder cuando se levanta"""
       try:
-          # 1. Notificar al master
+      # 1. Notificar al líder
           resp = requests.post(
-              f"{MASTER_URL}/node-startup",
+        f"{LEADER_URL}/node-startup",
               json={"node_name": NOMBRE_NODO},
               timeout=5
           )
-          # 2. Obtener lista de borrados del master
+      # 2. Obtener lista de borrados del líder
           borrados = resp.json().get("borrados_pendientes", [])
           # 3. Sincronizar con la lista (patrón PUSH)
           await sincronizar_borrados_pendientes(lista_previa=borrados)
       except:
-          # Fallback: sincronizar sin lista del master
+      # Fallback: sincronizar sin lista del líder
           await sincronizar_borrados_pendientes()
 
 
 SALIDA ESPERADA AL INICIAR:
-  [STARTUP-SYNC] Master envió 2 borrados pendientes
-  [SYNC] Patrón PUSH: Master envió 2 borrados
+  [STARTUP-SYNC] Líder envió 2 borrados pendientes
+  [SYNC] Patrón PUSH: Líder envió 2 borrados
   [SYNC] ✓ Borrado: ALMACENAMIENTO_NODO/erick/Redes/...
   [SYNC] ✓ Entrada 550e8400-... completada
   [SYNC] Resumen: 2 ✓, 0 ⟳, 0 ✗
@@ -310,7 +309,7 @@ SALIDA ESPERADA AL INICIAR:
 ─────────────────────
 
 [NUEVO] ENDPOINT: POST /node-startup
-  Propósito: Que workers notifiquen al master cuando se levantan
+  Propósito: Que nodos notifiquen al líder cuando se levantan
   
   Entrada: {"node_name": "node1"}
   
@@ -392,7 +391,7 @@ B) Éxito Parcial:
 C) Fallo Total:
    HTTP 503
    {
-     "detail": "Insuficientes workers exitosos (0/3). Fallaron: ['node1', 'node2', 'node3']"
+    "detail": "Insuficientes nodos exitosos (0/3). Fallaron: ['node1', 'node2', 'node3']"
    }
    
    ✗ Menos de 2 exitosos
@@ -462,7 +461,7 @@ async function eliminarYEsperar(nombreArchivo, area, subarea){
 }
 ```
 
-Opcional: Para UX más fluida, sustituir polling por SSE o WebSocket para notificaciones push desde el master cuando el estado cambie.
+Opcional: Para UX más fluida, sustituir polling por SSE o WebSocket para notificaciones push desde el líder cuando el estado cambie.
 
 
 RESPUESTA ASÍNCRONA AL USUARIO:
@@ -486,7 +485,7 @@ GARANTÍAS
 
 2. NO-DESTRUCTIVIDAD
    ✓ Si sincronización falla, archivo se deja en paz
-  ✓ La solicitud queda en cola y el background worker reintenta automáticamente
+  ✓ La solicitud queda en cola y el proceso en background reintenta automáticamente
    ✓ Después de 3 intentos → manual intervention (estado='fallido')
 
 
@@ -528,28 +527,28 @@ TESTING
 ═════════════════════════════════════════════════════════════════════════════════
 
 TEST 1: ÉXITO TOTAL
-  - 3 workers activos
+  - 3 nodos activos
   - DELETE /document
   - Verificar: HTTP 200, estado='éxito_total', archivos no existen
   
 TEST 2: ÉXITO PARCIAL
-  - Detener worker 3
+  - Detener nodo 3
   - DELETE /document
   - Verificar: HTTP 200, estado='éxito_parcial', pendiente creado
-  - Levantar worker 3
-  - Verificar: worker hace POST /node-startup
+  - Levantar nodo 3
+  - Verificar: nodo hace POST /node-startup
   - Verificar: archivo sincronizado INMEDIATAMENTE, estado='completado'
   - (No espera 5 minutos como antes)
 
 TEST 3: FALLO TOTAL
-  - Detener workers 2 y 3
+  - Detener nodos 2 y 3
   - DELETE /document
   - Verificar: HTTP 503, archivo sigue existiendo en todos
 
 TEST 4: PUSH PATTERN
-  - Detener worker 3 después de crear pendiente
-  - Levantar worker 3
-  - Verificar logs: POST /node-startup al master
+  - Detener nodo 3 después de crear pendiente
+  - Levantar nodo 3
+  - Verificar logs: POST /node-startup al líder
   - Verificar: sincronización inmediata (patrón PUSH)
   - Verificar: archivo borrado en < 2 segundos
 
@@ -557,18 +556,19 @@ TEST 4: PUSH PATTERN
 CONFIGURACIÓN PARA PRODUCCIÓN
 ═════════════════════════════════════════════════════════════════════════════════
 
-1. Actualizar MASTER_URL en .env de cada worker:
-   De: "http://localhost:8000"
-   A:  "http://192.168.1.100:8000" (IP del master en LAN)
+1. Actualizar LEADER_URL en .env de cada nodo (fallback a MASTER_URL soportado):
+  De: "http://localhost:8000"
+  A:  "http://192.168.1.100:8000" (IP del líder en LAN)
 
 2. Configurar ALMACENAMIENTO_NODO (rutas absolutas):
    De: "../storage/node1"
    A:  "/mnt/storage/node1" o "D:\\Documentos\\node1"
 
-3. Crear .env en cada worker con:
-   WORKER_NODE_NAME=node1  (o node2, node3)
-   ALMACENAMIENTO_NODO=/mnt/storage/node1
-   MASTER_URL=http://192.168.1.100:8000
+3. Crear .env en cada nodo con:
+  NODE_NAME=node1  (o node2, node3)
+  ALMACENAMIENTO_NODO=/mnt/storage/node1
+  LEADER_URL=http://192.168.1.100:8000
+  (Compatibilidad: el sistema seguirá leyendo WORKER_NODE_NAME y MASTER_URL si NODE_NAME o LEADER_URL no están definidos)
    SUPABASE_URL=https://...
    SUPABASE_KEY=...
 
@@ -577,7 +577,7 @@ CONFIGURACIÓN PARA PRODUCCIÓN
    → Si > 0: alerta automática
    
    SELECT COUNT(*) FROM borrados_pendientes WHERE estado='pendiente';
-  → Si > 0 y llevan demasiado tiempo: revisar logs del master/worker
+  → Si > 0 y llevan demasiado tiempo: revisar logs del líder/nodo
 
 
 ESTADO FINAL
@@ -588,16 +588,16 @@ ESTADO FINAL
 ✅ FASE 6b: [OPTIMIZADO] Push Pattern en lugar de job periódico — COMPLETADO
 ✅ FASE 6c: Cleanup de registros antiguos — COMPLETADO
 
-✅ FASE 7: Configuración para LAN (LISTA PARA IMPLEMENTAR)
+  ✅ FASE 7: Configuración para LAN (LISTA PARA IMPLEMENTAR)
 
 El sistema ahora:
   ✅ Permite borrados parciales (2+ de 3)
   ✅ No bloquea al usuario
   ✅ Sincroniza automáticamente
-  ✅ [NUEVO] Patrón PUSH: worker notifica al master al startup
+  ✅ [NUEVO] Patrón PUSH: nodo notifica al líder al startup
   ✅ [NUEVO] Sincronización inmediata (~1 segundo)
   ✅ [ELIMINADO] Job periódico cada 5 minutos (ineficiente)
-  ✅ Fallback automático si master offline
+  ✅ Fallback automático si el líder está offline
   ✅ Previene archivos huérfanos
   ✅ Escalable y resiliente
 

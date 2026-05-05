@@ -8,15 +8,15 @@ Diagramas de arquitectura y secuencia del sistema distribuido.
 Cliente
   |
   v
-Nodo lider (master)
+Nodo líder (master)
   |- auth
   |- gateway
   |- consensus
   |- routes
   |
-  +----> Worker 1 (/process)
-  +----> Worker 2 (/process)
-  +----> Worker 3 (/process)
+  +----> Nodo 1 (/process)
+  +----> Nodo 2 (/process)
+  +----> Nodo 3 (/process)
 
 Servicios compartidos
   |- shared/election.py
@@ -31,15 +31,15 @@ Persistencia
 ## 2. Secuencia de clasificacion
 
 ```text
-Cliente -> Master: POST /upload
-Master -> Gateway: validar_carga
-Master -> Worker1: /process
-Master -> Worker2: /process
-Master -> Worker3: /process
-Workers -> Master: area predicha
-Master -> Consensus: mayoria
-Master -> Supabase/Storage: guardar
-Master -> Cliente: respuesta final
+Cliente -> Líder: POST /upload
+Líder -> Gateway: validar_carga
+Líder -> Nodo1: /process
+Líder -> Nodo2: /process
+Líder -> Nodo3: /process
+Nodos -> Líder: area predicha
+Líder -> Consensus: mayoria
+Líder -> Supabase/Storage: guardar
+Líder -> Cliente: respuesta final
 ```
 
 ## 3. Secuencia de liderazgo
@@ -57,8 +57,8 @@ Nodos -> nuevo lider: redireccion de trafico
 ## 4. Flujo de descarga
 
 ```text
-Cliente -> Master: GET /download
-Master -> node1: buscar archivo
+Cliente -> Líder: GET /download
+Líder -> node1: buscar archivo
 si no existe -> node2
 si no existe -> node3
 si existe -> FileResponse
@@ -89,8 +89,8 @@ shared/
 ## 6. Operacion recomendada
 
 ```text
-1) Iniciar workers
-2) Iniciar master
+1) Iniciar nodos
+2) Iniciar líder
 3) Verificar /leader y /docs
 4) Ejecutar pruebas de upload/download
 5) Simular caida de lider para validar failover

@@ -77,7 +77,7 @@ Se ha transformado el sistema de clasificación de un modelo **por usuario** a u
   - `GET /categories` - Ahora devuelve catálogo global (solo lectura)
   - `POST /upload` - Flujo completamente rediseñado:
     1. Obtiene catálogo global
-    2. Envía catálogo a workers
+    2. Envía catálogo a nodos
     3. Recibe ruta predicha (ej: `"Tecnología/IA"`)
     4. Valida que existe en catálogo
     5. Si NO existe → asigna `"Otros/General"` automáticamente
@@ -119,12 +119,12 @@ Se ha transformado el sistema de clasificación de un modelo **por usuario** a u
    ├─ Ciencias/Matemáticas
    └─ Otros/General
    ↓
-3. Envía PDF + catálogo a 3 workers
-   ↓
-4. Cada worker predice ruta jerárquica
-   ├─ Worker 1 → "Tecnología/Redes"
-   ├─ Worker 2 → "Tecnología/Redes"
-   └─ Worker 3 → "Tecnología/Redes"
+3. Envía PDF + catálogo a 3 nodos
+  ↓
+4. Cada nodo predice ruta jerárquica
+  ├─ Nodo 1 → "Tecnología/Redes"
+  ├─ Nodo 2 → "Tecnología/Redes"
+  └─ Nodo 3 → "Tecnología/Redes"
    ↓
 5. Maestro hace consenso por mayoría
    → Resultado: "Tecnología/Redes"
@@ -219,7 +219,7 @@ Response: documentos clasificados en el catálogo global
 - [x] Schema SQL actualizado con catálogo global
 - [x] Datos iniciales insertados en tematicas y subtematicas
 - [x] Classifier entrena con etiquetas jerárquicas
-- [x] Workers devuelven rutas completas
+- [x] Nodos devuelven rutas completas
 - [x] Consenso funciona con rutas jerárquicas
 - [x] Database expone funciones para catálogo global
 - [x] Routes redirige flujo a nuevas funciones

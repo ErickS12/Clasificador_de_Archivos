@@ -2,12 +2,12 @@
 Sincronización de Borrados Pendientes
 ======================================
 Este módulo implementa el mecanismo de eventual consistency para el borrado distribuido.
-Cuando un nodo worker se levanta, sincroniza los borrados pendientes desde Supabase.
+Cuando un nodo se levanta, sincroniza los borrados pendientes desde Supabase.
 
 FASE 6 (Startup Sync) — Estado: ✅ IMPLEMENTADO
 
 Pasos:
-  1. Al iniciar el worker, lee borrados_pendientes con estado='pendiente'
+    1. Al iniciar el nodo, lee borrados_pendientes con estado='pendiente'
   2. Para cada entrada, intenta borrar el archivo del disco local
   3. Si éxito → marca como 'completado' en BD
   4. Si fallo → incrementa intentos_fallidos
@@ -23,17 +23,17 @@ import asyncio
 from datetime import datetime, timedelta
 from typing import Optional
 
-# Aquí iría la inicialización de Supabase (inyectada desde worker/main.py)
+# Aquí iría la inicialización de Supabase (inyectada desde el módulo de API)
 # db = get_db()  # Implementación inyectada
 
-NOMBRE_NODO = os.getenv("WORKER_NODE_NAME", "node1")  # 'node1', 'node2', 'node3', etc.
+NOMBRE_NODO = os.getenv("NODE_NAME") or os.getenv("WORKER_NODE_NAME", "node1")
 ALMACENAMIENTO_NODO = os.getenv("ALMACENAMIENTO_NODO", "../storage/node1")
 
 
 def obtener_db():
     """
     Obtiene la instancia de Supabase.
-    Implementación inyectada desde worker/main.py para evitar imports circulares.
+    Implementación inyectada desde la API para evitar imports circulares.
     """
     from master.database import db
     return db
@@ -44,7 +44,7 @@ async def sincronizar_borrados_pendientes(db=None, lista_previa: list[dict] = No
     Sincroniza los borrados pendientes para ESTE nodo.
     
     Puede funcionar de dos maneras:
-      A) Con lista_previa: Master envió archivos a borrar (patrón PUSH)
+            A) Con lista_previa: el líder envió archivos a borrar (patrón PUSH)
       B) Sin lista_previa: Lee de BD todos los pendientes (patrón PULL - fallback)
     
     Flujo:
@@ -58,7 +58,7 @@ async def sincronizar_borrados_pendientes(db=None, lista_previa: list[dict] = No
     
     Args:
         db: Instancia de Supabase (opcional)
-        lista_previa: Lista de archivos a borrar (desde Master, patrón PUSH)
+        lista_previa: Lista de archivos a borrar (desde el líder, patrón PUSH)
     
     Retorna:
         dict con resultados: {
@@ -79,12 +79,12 @@ async def sincronizar_borrados_pendientes(db=None, lista_previa: list[dict] = No
     }
     
     try:
-        # Si lista_previa viene del Master (patrón PUSH)
+        # Si lista_previa viene del líder (patrón PUSH)
         if lista_previa:
             pendientes = lista_previa
-            print(f"[SYNC] Patrón PUSH: Master envió {len(pendientes)} borrados")
+            print(f"[SYNC] Patrón PUSH: Líder envió {len(pendientes)} borrados")
         else:
-            # Patrón PULL: leer de BD (fallback si Master offline)
+            # Patrón PULL: leer de BD (fallback si líder offline)
             resp = (
                 db.table("borrados_pendientes")
                 .select("id, documento_id, lista_archivos, intentos_fallidos")
@@ -185,7 +185,7 @@ async def reintentar_borrados_periodicos(db=None, intervalo_segundos: int = 300)
     """
     Job periódico que intenta completar los borrados pendientes cada X segundos.
     
-    Se ejecuta continuamente en background durante la vida del worker.
+    Se ejecuta continuamente en background durante la vida del nodo.
     Si hay reintentos fallidos, los intenta de nuevo sin bloquear otras operaciones.
     
     Args:

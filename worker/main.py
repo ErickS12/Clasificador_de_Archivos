@@ -1,6 +1,6 @@
 """
-Nodo Worker — API de Procesamiento
-====================================
+Nodo de Procesamiento — API
+===========================
 ESTADO:
   ✅ POST /process      — extracción + clasificación
   ✅ Heartbeat + Elección de Líder — election.py
@@ -23,7 +23,7 @@ from .extractor import extraer_texto
 from .classifier import clasificar
 from shared.election import iniciar as iniciar_eleccion, yo_soy_lider, obtener_url_lider
 from shared.sync import sincronizar_borrados_pendientes, reintentar_borrados_periodicos
-from master.routes import router as router_maestro
+from master.routes import router as router_lider
 
 app = FastAPI()
 
@@ -66,8 +66,8 @@ class RedirigirAlLiderMiddleware(BaseHTTPMiddleware):
 app.add_middleware(RedirigirAlLiderMiddleware)
 
 
-# ── Rutas del maestro (activas solo cuando este nodo es líder) ───────────────
-app.include_router(router_maestro)
+# ── Rutas del líder (activas solo cuando este nodo es líder) ─────────────────
+app.include_router(router_lider)
 
 
 # ── Startup ──────────────────────────────────────────────────────────────────
@@ -77,16 +77,16 @@ async def evento_inicio():
     iniciar_eleccion(app)
 
     # FASE 6: Sincronización de borrados pendientes con patrón PUSH
-    # Worker notifica al Master cuando se levanta
-    asyncio.create_task(sincronizar_con_master_al_startup())
+    # El nodo notifica al líder cuando se levanta
+    asyncio.create_task(sincronizar_con_lider_al_startup())
     
-    print(f"[WORKER] Iniciado. Sincronizando borrados pendientes...")
+    print(f"[NODO] Iniciado. Sincronizando borrados pendientes...")
 
 
-async def sincronizar_con_master_al_startup():
+async def sincronizar_con_lider_al_startup():
     """
-    Al startup, notifica al master y sincroniza inmediatamente los borrados pendientes.
-    Patrón PUSH: Worker → Master (en lugar de Master → Worker cada 5 minutos)
+    Al startup, notifica al líder y sincroniza inmediatamente los borrados pendientes.
+    Patrón PUSH: Nodo → Líder
     """
     import requests
     from shared.sync import sincronizar_borrados_pendientes
@@ -95,20 +95,22 @@ async def sincronizar_con_master_al_startup():
     await asyncio.sleep(1)
     
     try:
-        # 1. Notificar al master: "Estoy vivo"
-        url_master = os.getenv("MASTER_URL", "http://localhost:8000")
+        # 1. Notificar al líder: "Estoy vivo"
+        # Se mantiene fallback a MASTER_URL por compatibilidad.
+        url_lider = os.getenv("LEADER_URL") or os.getenv("MASTER_URL", "http://localhost:8000")
+        nombre_nodo = os.getenv("NODE_NAME") or os.getenv("WORKER_NODE_NAME", "node1")
         resp = requests.post(
-            f"{url_master}/node-startup",
-            json={"node_name": os.getenv("WORKER_NODE_NAME", "node1")},
+            f"{url_lider}/node-startup",
+            json={"node_name": nombre_nodo},
             timeout=5
         )
         
         respuesta = resp.json()
         borrados = respuesta.get("borrados_pendientes", [])
         
-        # 2. Sincronizar inmediatamente con los datos del master
+        # 2. Sincronizar inmediatamente con los datos del líder
         if borrados:
-            print(f"[STARTUP-SYNC] Master envió {len(borrados)} borrados pendientes")
+            print(f"[STARTUP-SYNC] Líder envió {len(borrados)} borrados pendientes")
             resultado = await sincronizar_borrados_pendientes(lista_previa=borrados)
             print(f"[STARTUP-SYNC] Resultado: {resultado['completados'].__len__()} completados, "
                   f"{resultado['fallidos'].__len__()} fallidos, "
@@ -117,14 +119,14 @@ async def sincronizar_con_master_al_startup():
             print(f"[STARTUP-SYNC] Sin borrados pendientes - sistema consistente")
     
     except requests.exceptions.Timeout:
-        print(f"[STARTUP-SYNC] Master offline (timeout) - sincronizando fallback desde BD")
-        # Fallback: sincronizar sin info del master (polling local)
+        print(f"[STARTUP-SYNC] Líder offline (timeout) - sincronizando fallback desde BD")
+        # Fallback: sincronizar sin info del líder (polling local)
         resultado = await sincronizar_borrados_pendientes()
         print(f"[STARTUP-SYNC] Fallback: {resultado}")
     
     except Exception as e:
-        print(f"[STARTUP-SYNC] Error contactando master: {e} - sincronizando fallback")
-        # Fallback: sincronizar sin info del master
+        print(f"[STARTUP-SYNC] Error contactando líder: {e} - sincronizando fallback")
+        # Fallback: sincronizar sin info del líder
         resultado = await sincronizar_borrados_pendientes()
         print(f"[STARTUP-SYNC] Fallback: {resultado}")
 

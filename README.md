@@ -1,6 +1,6 @@
 ﻿# Clasificador Distribuido de Archivos Científicos
 
-Sistema distribuido para clasificación de PDFs científicos con FastAPI, consenso por mayoría entre workers y elección de líder con algoritmo Bully.
+Sistema distribuido para clasificación de PDFs científicos con FastAPI, consenso por mayoría entre nodos y elección de líder con algoritmo Bully.
 
 ## Arquitectura
 
@@ -35,11 +35,11 @@ clasificador-final/
 
 ## Componentes clave
 
-- master: API de negocio, autenticación, catálogo global, documentos y administración.
-- worker: procesamiento de PDF (extracción + clasificación).
+- líder (`master/`): API de negocio, autenticación, catálogo global, documentos y administración.
+- nodos de procesamiento (`worker/`): procesamiento de PDF (extracción + clasificación).
 - shared/election.py: detección de caída de líder y elección automática.
 - shared/leader_db.py: registro del líder activo y heartbeat en Supabase.
-- master/consensus.py: votación entre workers para clasificación final.
+- master/consensus.py: votación entre nodos para clasificación final.
 
 ## Instalacion
 
@@ -52,9 +52,11 @@ pip install -r requirements.txt
 Abrir 4 terminales desde la raiz. Cada proceso debe usar un `NODO_ID` distinto; el nodo con mayor ID disponible es el que puede quedar como lider si el actual cae:
 
 ```bash
+# Inicia nodos de procesamiento (node1..node3)
 uvicorn worker.main:app --port 5001
 uvicorn worker.main:app --port 5002
 uvicorn worker.main:app --port 5003
+# Inicia el nodo con mayor prioridad (líder posible)
 uvicorn master.main:app --port 8000
 ```
 
@@ -76,7 +78,7 @@ http://localhost:8000/docs
 - CLUSTER_NODES_JSON: alternativa para definir todos los nodos en una sola variable JSON.
 - SUPABASE_URL: URL del proyecto Supabase.
 - SUPABASE_KEY: clave de acceso para operaciones de líder.
-- ALMACENAMIENTO_NODO: ruta local del nodo worker.
+ - ALMACENAMIENTO_NODO: ruta local del nodo (p.ej. ../storage/node1). Mantiene nombre `ALMACENAMIENTO_NODO`.
 
 ## Configuración para 4 computadoras
 
@@ -166,11 +168,11 @@ uvicorn worker.main:app --host 0.0.0.0 --port 5002
 ## Flujo funcional
 
 1. Usuario autentica y obtiene token.
-2. Master valida archivo y metadatos.
-3. Master envía el PDF a workers y calcula mayoría.
+2. Líder valida archivo y metadatos.
+3. Líder envía el PDF a nodos y calcula mayoría.
 4. PDF se replica en storage/node1-node3.
 5. Metadatos y sesión se guardan en Supabase (tablas usuarios, tokens_sesion, tematicas, subtematicas, documentos, nodos_almacenamiento y consenso_votos).
-6. Si el líder cae, cualquier worker o el master puede asumir el rol, siempre que tenga el `NODO_ID` correcto y gane la elección Bully.
+6. Si el líder cae, cualquier nodo puede asumir el rol, siempre que tenga el `NODO_ID` correcto y gane la elección Bully.
 
 ## Documentación complementaria
 
