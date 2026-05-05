@@ -5,7 +5,7 @@ Persistencia 100% en Supabase para autenticacion, areas y metadatos.
 
 from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, UploadFile, File, HTTPException, Header, Depends, Query
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 import hashlib
 import os
 import shutil
@@ -14,7 +14,6 @@ from typing import Any, Optional
 from master.auth import hashear_contrasena, verificar_contrasena, generar_token, requiere_admin
 from master.gateway import validar_carga
 from master.consensus import clasificar_con_consenso
-from master.deletion_coordinator import solicitar_borrado_fisico, confirmar_y_purgar_base_datos
 from master.adapter import (
     adaptar_respuesta_carga,
     adaptar_respuesta_archivos,
@@ -36,6 +35,9 @@ from master.database import (
     actualizar_documento_clasificacion,
     marcar_documento_eliminando,
     marcar_documento_eliminado,
+    crear_solicitud_borrado_cola,
+    obtener_solicitud_borrado_activa,
+    obtener_solicitud_borrado_por_id,
     insertar_voto_consenso,
     insertar_nodo_replicacion,
     obtener_nodos_documento,
@@ -217,10 +219,10 @@ def obtener_categorias(auth: tuple = Depends(usuario_actual)):
 # ELIMINADO: Los usuarios ya no pueden crear ni borrar categorías.
 # El catálogo es global y de solo lectura.
 # Endpoints removidos:
-#   - POST /areas (crear área)
-#   - POST /areas/{area}/sub (crear subárea)
-#   - DELETE /areas/{area} (eliminar área)
-#   - DELETE /areas/{area}/sub/{subarea} (eliminar subárea)
+#   - POST /areas
+#   - POST /areas/{area}/sub
+#   - DELETE /areas/{area}
+#   - DELETE /areas/{area}/sub/{subarea}
 
 
 @router.post("/node-startup", tags=["cluster"])
@@ -500,13 +502,13 @@ def eliminar_documento(
     subarea: Optional[str] = None,
     auth: tuple = Depends(usuario_actual),
 ):
-    """Eliminar un documento del usuario.
+    """Encolar la solicitud de borrado del documento del usuario.
 
     Flujo:
-      1. Obtener el documento y sus replicas
-      2. Borrar el archivo fisico en todos los nodos
-      3. Borrar el registro del documento en Supabase
-      4. Dejar que ON DELETE CASCADE limpie replicas y votos
+      1. Validar que el documento existe y pertenece al usuario
+      2. Guardar la solicitud en cola_borrados
+      3. Responder 202 Accepted
+      4. El master procesa la cola en segundo plano
     """
     nombre_usuario, datos = auth
 
@@ -576,17 +578,66 @@ def eliminar_documento(
     if not lista_archivos:
         raise HTTPException(404, "Archivo no encontrado en ningun nodo.")
 
-    # NUEVO: Usar patrón eventual consistency (2+ de 3 = éxito)
-    resultados, nodos_fallidos = solicitar_borrado_fisico(lista_archivos)
-    resumen = confirmar_y_purgar_base_datos(documento["id"], resultados, nodos_fallidos, lista_archivos)
+    solicitud_activa = obtener_solicitud_borrado_activa(documento["id"])
+    if solicitud_activa:
+        return JSONResponse(
+            status_code=202,
+            content={
+                "mensaje": f"La solicitud de borrado de '{nombre_archivo}' ya está en cola.",
+                "estado": "aceptada",
+                "cola_id": solicitud_activa["id"],
+                "documento_id": documento["id"],
+            },
+        )
 
-    estado = "éxito_total" if not nodos_fallidos else "éxito_parcial"
+    cola_id = crear_solicitud_borrado_cola(
+        documento_id=documento["id"],
+        usuario_id=datos["id"],
+        nombre_usuario=nombre_usuario,
+        nombre_archivo=nombre_archivo,
+        area=area,
+        subarea=subarea,
+    )
+
+    if not cola_id:
+        raise HTTPException(503, "No se pudo encolar la solicitud de borrado.")
+
+    return JSONResponse(
+        status_code=202,
+        content={
+            "mensaje": f"Solicitud de borrado de '{nombre_archivo}' aceptada y encolada.",
+            "estado": "aceptada",
+            "cola_id": cola_id,
+            "documento_id": documento["id"],
+        },
+    )
+
+
+@router.get("/delete-requests/{cola_id}", tags=["documentos"])
+def obtener_estado_solicitud_borrado(cola_id: str, auth: tuple = Depends(usuario_actual)):
+    """Consultar el estado de una solicitud de borrado en la cola.
+
+    Retorna detalles básicos: estado, intentos, ultimo_error, timestamps.
+    Solo el usuario que inició la solicitud puede consultarla.
+    """
+    nombre_usuario, datos = auth
+
+    solicitud = obtener_solicitud_borrado_por_id(cola_id)
+    if not solicitud:
+        raise HTTPException(404, "Solicitud no encontrada.")
+
+    # Permiso: solo el propietario puede consultar su solicitud
+    if solicitud.get("usuario_id") != datos["id"]:
+        raise HTTPException(403, "No tienes permiso para ver esta solicitud.")
+
     return {
-        "mensaje": f"Archivo '{nombre_archivo}' eliminado (estado: {estado}).",
-        "nodos": resultados,
-        "pendientes": resumen.get("ids_pendientes", []),
-        "estado": estado,
-        "resumen": resumen,
+        "cola_id": solicitud.get("id"),
+        "documento_id": solicitud.get("documento_id"),
+        "estado": solicitud.get("estado"),
+        "intentos": solicitud.get("intentos", 0),
+        "ultimo_error": solicitud.get("ultimo_error"),
+        "creado_en": solicitud.get("creado_en"),
+        "actualizado_en": solicitud.get("actualizado_en"),
     }
 
 

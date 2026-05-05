@@ -1,26 +1,26 @@
-# Indice General de Documentacion
+﻿# Indice General de Documentacion
 
 Este indice organiza la documentacion tecnica y funcional del proyecto con la arquitectura actual.
 
 ## Ruta de lectura recomendada
 
-1. RESUMEN_EJECUTIVO.md
-2. DOCUMENTACION_INTEGRACION.md
-3. DOCUMENTACION_TECNICA.md
-4. DOCUMENTACION_GATEWAY.md
-5. DIAGRAMAS_VISUALES.md
+1. resumen_arquitectura.md
+2. integracion_cluster.md
+3. arquitectura_tecnica.md
+4. validacion_gateway.md
+5. diagramas_arquitectura.md
 6. CRONOGRAMA.md
 
 ## Documentos disponibles
 
 - [README.md](README.md): vision general, instalacion y ejecucion
-- [RESUMEN_EJECUTIVO.md](RESUMEN_EJECUTIVO.md): panorama de arquitectura y operaciones
-- [DOCUMENTACION_INTEGRACION.md](DOCUMENTACION_INTEGRACION.md): interaccion entre master, worker y shared
-- [DOCUMENTACION_TECNICA.md](DOCUMENTACION_TECNICA.md): detalle de modulos, endpoints y decisiones de implementacion
-- [DOCUMENTACION_GATEWAY.md](DOCUMENTACION_GATEWAY.md): validaciones, flujo de carga y adaptacion de respuesta
-- [DIAGRAMAS_VISUALES.md](DIAGRAMAS_VISUALES.md): diagramas de despliegue, secuencia y flujo
+- [resumen_arquitectura.md](resumen_arquitectura.md): panorama de arquitectura y operaciones
+- [integracion_cluster.md](integracion_cluster.md): interaccion entre master, worker y shared
+- [arquitectura_tecnica.md](arquitectura_tecnica.md): detalle de modulos, endpoints y decisiones de implementacion
+- [validacion_gateway.md](validacion_gateway.md): validaciones, flujo de carga y adaptacion de respuesta
+- [diagramas_arquitectura.md](diagramas_arquitectura.md): diagramas de despliegue, secuencia y flujo
 - [CRONOGRAMA.md](CRONOGRAMA.md): roadmap de trabajo por bloques
-- [MIGRACION_ESTRUCTURA.md](MIGRACION_ESTRUCTURA.md): referencia de estructura de carpetas y responsabilidades
+- [estructura_legacy.md](estructura_legacy.md): referencia de estructura de carpetas y responsabilidades
 - [frontend/README_FRONTEND.md](frontend/README_FRONTEND.md): integracion del frontend con la API
 
 ## Mapa rapido de codigo
@@ -35,17 +35,18 @@ Este indice organiza la documentacion tecnica y funcional del proyecto con la ar
 ## Endpoints centrales
 
 - Auth: POST /register, POST /login, POST /logout
-- Areas: GET /categories, POST /areas, POST /areas/{area}/sub
+- Categorias: GET /categories
 - Documentos: POST /upload, GET /files, GET /download, DELETE /document
-- Admin: GET/POST/PUT/DELETE en /admin/users y /admin/areas
+- Admin: GET/POST/PUT/DELETE en /admin/users
 - Cluster: GET /heartbeat, GET /leader, POST /election/start, POST /election/coordinator
 
 ## Mantenimiento de documentacion
 
 Cuando cambie el comportamiento del sistema, actualizar:
 
-1. DOCUMENTACION_TECNICA.md
-2. DOCUMENTACION_INTEGRACION.md
-3. DIAGRAMAS_VISUALES.md
+1. arquitectura_tecnica.md
+2. integracion_cluster.md
+3. diagramas_arquitectura.md
 4. README.md
 5. CRONOGRAMA.md
+

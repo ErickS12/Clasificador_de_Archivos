@@ -127,18 +127,53 @@ except Exception as e:
 print("\n[6] Verificando tematica 'General' automática...")
 
 try:
-    response = db.table("tematicas").select("*").eq("usuario_id", usuario_id).eq("es_general", True).execute()
-    
-    if response.data and len(response.data) > 0:
-        tematica = response.data[0]
-        print(f"✓ Tematica 'General' creada automáticamente")
-        print(f"  ID: {tematica['id']}")
-        print(f"  Nombre: {tematica['nombre']}")
+    # En el nuevo schema las tematicas son un catalogo global (no por usuario).
+    # Verificamos que exista la tematica 'Otros' (es_general) y la subtematica 'General'.
+    resp_t = db.table("tematicas").select("*").eq("nombre", "Otros").single().execute()
+
+    if not resp_t.data:
+        print(f"⚠️  Tematica 'Otros' no encontrada en el catalogo global")
     else:
-        print(f"⚠️  Tematica 'General' no encontrada (el trigger puede no funcionar)")
-        
+        tematica = resp_t.data
+        print(f"✓ Tematica encontrada: {tematica['nombre']} (es_general={tematica.get('es_general')})")
+
+        # Buscar subtematica 'General' asociada
+        resp_s = db.table("subtematicas").select("*").eq("tematica_id", tematica['id']).eq("nombre", "General").limit(1).execute()
+        if resp_s.data and len(resp_s.data) > 0:
+            sub = resp_s.data[0]
+            print(f"✓ Subtematica 'General' presente (ID: {sub['id']})")
+        else:
+            print(f"⚠️  Subtematica 'General' no encontrada para la tematica 'Otros'")
+
+        # Intentar crear un documento de prueba referenciando la tematica/subtematica
+        try:
+            doc_payload = {
+                "usuario_id": usuario_id,
+                "tematica_id": tematica['id'],
+                "subtematica_id": sub['id'] if resp_s.data and len(resp_s.data) > 0 else None,
+                "nombre_archivo": f"test_doc_{uuid.uuid4().hex[:8]}.pdf",
+                "hash_original": "hash_test",
+                "tamano_bytes": 12345,
+                "version": 1,
+                "estado": "activo"
+            }
+            resp_doc = db.table("documentos").insert(doc_payload).execute()
+            if resp_doc.data:
+                doc = resp_doc.data[0]
+                print(f"✓ Documento de prueba creado: {doc['nombre_archivo']} (ID: {doc['id']})")
+                # Leerlo de nuevo
+                resp_read = db.table("documentos").select("*").eq("id", doc['id']).single().execute()
+                if resp_read.data:
+                    print(f"✓ Lectura documento OK: {resp_read.data['nombre_archivo']}")
+                else:
+                    print("⚠️  No se pudo leer el documento recién creado")
+            else:
+                print("⚠️  Inserción de documento no retornó datos")
+        except Exception as e:
+            print(f"⚠️  Error creando documento de prueba: {e}")
+
 except Exception as e:
-    print(f"⚠️  Error al verificar tematica: {e}")
+    print(f"⚠️  Error al verificar tematicas/subtematicas: {e}")
 
 # ── PASO 7: Verificar tokens ─────────────────────────────────────────
 

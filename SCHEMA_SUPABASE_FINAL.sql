@@ -194,6 +194,28 @@ CREATE INDEX IF NOT EXISTS idx_borrados_pendientes_estado ON borrados_pendientes
 CREATE INDEX IF NOT EXISTS idx_borrados_pendientes_nodo   ON borrados_pendientes(nodo_destino, estado);
 
 
+-- ── 8.6 COLA DE BORRADOS ASÍNCRONA ──────────────────────────────────────────
+-- Cola interna para que el usuario reciba 202 Accepted y el master procese en background.
+CREATE TABLE IF NOT EXISTS cola_borrados (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    documento_id    UUID NOT NULL REFERENCES documentos(id) ON DELETE CASCADE,
+    usuario_id      UUID NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    nombre_usuario  VARCHAR(100) NOT NULL,
+    nombre_archivo  VARCHAR(255) NOT NULL,
+    area            VARCHAR(150) NOT NULL,
+    subarea         VARCHAR(150),
+    estado          VARCHAR(50) NOT NULL DEFAULT 'pendiente' CHECK (estado IN ('pendiente', 'procesando', 'completado', 'fallido')),
+    intentos        INT NOT NULL DEFAULT 0,
+    ultimo_error    TEXT,
+    creado_en       TIMESTAMPTZ NOT NULL DEFAULT now(),
+    actualizado_en  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_cola_borrados_estado     ON cola_borrados(estado, creado_en);
+CREATE INDEX IF NOT EXISTS idx_cola_borrados_documento  ON cola_borrados(documento_id);
+CREATE INDEX IF NOT EXISTS idx_cola_borrados_usuario    ON cola_borrados(usuario_id, estado);
+
+
 -- ── 9. LIDER ACTUAL ──────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS lider_actual (
     id                 INT PRIMARY KEY DEFAULT 1,

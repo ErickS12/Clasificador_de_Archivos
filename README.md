@@ -1,4 +1,4 @@
-# Clasificador Distribuido de Archivos Cientificos
+﻿# Clasificador Distribuido de Archivos Cientificos
 
 Sistema distribuido para clasificacion de PDFs cientificos con FastAPI, consenso por mayoria entre workers y eleccion de lider con algoritmo Bully.
 
@@ -6,37 +6,36 @@ Sistema distribuido para clasificacion de PDFs cientificos con FastAPI, consenso
 
 ```text
 clasificador-final/
-├── master/
-│   ├── __init__.py
-│   ├── main.py
-│   ├── routes.py
-│   ├── auth.py
-│   ├── gateway.py
-│   ├── consensus.py
-│   ├── adapter.py
-│   ├── database.py
-│   ├── deletion_coordinator.py
-│   └── apa.py
-├── worker/
-│   ├── __init__.py
-│   ├── main.py
-│   ├── extractor.py
-│   ├── classifier.py
-│   └── sync.py
-├── shared/
-│   ├── __init__.py
-│   ├── election.py
-│   └── leader_db.py
-├── metadata/
-├── storage/
-├── frontend/
-├── requirements.txt
-└── CRONOGRAMA.md
+â”œâ”€â”€ master/
+â”‚   â”œâ”€â”€ __init__.py
+â”‚   â”œâ”€â”€ main.py
+â”‚   â”œâ”€â”€ routes.py
+â”‚   â”œâ”€â”€ auth.py
+â”‚   â”œâ”€â”€ gateway.py
+â”‚   â”œâ”€â”€ consensus.py
+â”‚   â”œâ”€â”€ adapter.py
+â”‚   â”œâ”€â”€ database.py
+â”‚   â”œâ”€â”€ deletion_coordinator.py
+â”‚   â””â”€â”€ apa.py
+â”œâ”€â”€ worker/
+â”‚   â”œâ”€â”€ __init__.py
+â”‚   â”œâ”€â”€ main.py
+â”‚   â”œâ”€â”€ extractor.py
+â”‚   â”œâ”€â”€ classifier.py
+â”‚   â””â”€â”€ sync.py
+â”œâ”€â”€ shared/
+â”‚   â”œâ”€â”€ __init__.py
+â”‚   â”œâ”€â”€ election.py
+â”‚   â””â”€â”€ leader_db.py
+â”œâ”€â”€ storage/
+â”œâ”€â”€ frontend/
+â”œâ”€â”€ requirements.txt
+â””â”€â”€ CRONOGRAMA.md
 ```
 
 ## Componentes clave
 
-- master: API de negocio, autenticacion, gestion de areas, documentos y administracion.
+- master: API de negocio, autenticacion, catalogo global, documentos y administracion.
 - worker: procesamiento de PDF (extraccion + clasificacion).
 - shared/election.py: deteccion de caida de lider y eleccion automatica.
 - shared/leader_db.py: registro del lider activo y heartbeat en Supabase.
@@ -159,9 +158,9 @@ uvicorn worker.main:app --host 0.0.0.0 --port 5002
 ## Endpoints principales
 
 - Auth: /register, /login, /logout
-- Areas: /categories, /areas, /areas/{area}/sub
+- Categorias: /categories
 - Documentos: /upload, /files, /download, /document
-- Admin: /admin/users, /admin/areas/*
+- Admin: /admin/users
 - Eleccion de lider: /heartbeat, /leader, /election/start, /election/coordinator
 
 ## Flujo funcional
@@ -176,6 +175,9 @@ uvicorn worker.main:app --host 0.0.0.0 --port 5002
 ## Documentacion complementaria
 
 - CRONOGRAMA.md
-- RESUMEN_EJECUTIVO.md
-- INDICE_DOCUMENTACION.md
-- DOCUMENTACION_TECNICA.md
+- documentacion/resumen_arquitectura.md
+- documentacion/indice_documentacion.md
+- documentacion/arquitectura_tecnica.md
+- documentacion/integracion_cluster.md
+- documentacion/validacion_gateway.md
+

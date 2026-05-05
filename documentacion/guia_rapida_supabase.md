@@ -1,4 +1,4 @@
-# PASOS RAPIDOS - De 0 a Supabase en 15 minutos
+﻿# PASOS RAPIDOS - De 0 a Supabase en 15 minutos
 
 ## Paso 1: Crear Proyecto Supabase (3 min)
 
@@ -20,10 +20,10 @@
 1. En Supabase dashboard: click "SQL Editor"
 2. Click "New Query"
 3. Abre archivo: SCHEMA_SUPABASE_FINAL.sql
-4. Ctrl+A → Ctrl+C (copiar todo)
+4. Ctrl+A â†’ Ctrl+C (copiar todo)
 5. Pega en SQL Editor: Ctrl+V
 6. Click boton "RUN" (arriba a la derecha)
-7. Esperar verde: "Executed successfully ✓"
+7. Esperar verde: "Executed successfully âœ“"
 ```
 
 ---
@@ -33,7 +33,7 @@
 En Supabase dashboard:
 
 ```
-1. Click gear icon (arriba derecha) → "Project Settings"
+1. Click gear icon (arriba derecha) â†’ "Project Settings"
 2. Click "API" en menu izquierdo
 
 COPIAR ESTOS VALORES:
@@ -46,7 +46,7 @@ Anon Key:     eyJhbGc....... (la larga)
 
 ## Paso 4: Crear .env (1 min)
 
-Archivo: `c:\Users\erick\Downloads\clasificador-final\.env`
+Archivo: `C:\Clasificador_de_Archivos\.env`
 
 Contenido:
 ```env
@@ -63,7 +63,7 @@ PYTHONPATH=.
 
 En terminal:
 ```bash
-cd c:\Users\erick\Downloads\clasificador-final
+cd C:\Clasificador_de_Archivos
 pip install supabase python-dotenv
 ```
 
@@ -71,7 +71,7 @@ pip install supabase python-dotenv
 
 ## Paso 6: Test Rapido (3 min)
 
-Crea archivo: `test_db_rapido.py`
+Crea archivo: `test_conexion.py`
 
 ```python
 import os
@@ -85,25 +85,25 @@ usuario_id = insertar_usuario(
     username="test123",
     password_hash="hash_abc123"
 )
-print(f"✓ Usuario creado: {usuario_id}")
+print(f"âœ“ Usuario creado: {usuario_id}")
 
 # Test 2: Obtener usuario
 usuario = obtener_usuario_por_nombre("test123")
-print(f"✓ Usuario obtenido: {usuario['username']}")
+print(f"âœ“ Usuario obtenido: {usuario['username']}")
 ```
 
 Ejecutar:
 ```bash
-python test_db_rapido.py
+python test_conexion.py
 ```
 
 Resultado esperado:
 ```
-✓ Usuario creado: 550e8400-e29b-41d4-a716-446655440000
-✓ Usuario obtenido: test123
+âœ“ Usuario creado: 550e8400-e29b-41d4-a716-446655440000
+âœ“ Usuario obtenido: test123
 ```
 
-Si ves ✓ en ambas lineas: **FELICIDADES! BD conectada correctamente.**
+Si ves âœ“ en ambas lineas: **FELICIDADES! BD conectada correctamente.**
 
 ---
 
@@ -139,7 +139,7 @@ En Supabase dashboard:
    - [ ] consenso_votos
    - [ ] lider_actual
 
-3. Hacer click en "usuarios" → deberia mostrar la fila del usuario test123
+3. Hacer click en "usuarios" â†’ deberia mostrar la fila del usuario test123
 
 Si ves todo: **TODO LISTO PARA USAR!**
 
@@ -147,11 +147,11 @@ Si ves todo: **TODO LISTO PARA USAR!**
 
 ## PROXIMOS PASOS
 
-1. ✅ Supabase configurado
-2. ✅ BD conectada desde Python
-3. ⬜ Actualizar routes.py (EJEMPLO_INTEGRACION_ROUTES.py)
-4. ⬜ Actualizar consensus.py (EJEMPLO_INTEGRACION_CONSENSUS_ELECTION.py)
-5. ⬜ Actualizar election.py (EJEMPLO_INTEGRACION_CONSENSUS_ELECTION.py)
+1. âœ… Supabase configurado
+2. âœ… BD conectada desde Python
+3. â¬œ Actualizar routes.py (EJEMPLO_INTEGRACION_ROUTES.py)
+4. â¬œ Actualizar consensus.py (EJEMPLO_INTEGRACION_CONSENSUS_ELECTION.py)
+5. â¬œ Actualizar election.py (EJEMPLO_INTEGRACION_CONSENSUS_ELECTION.py)
 
 ---
 
@@ -171,7 +171,7 @@ pip install supabase python-dotenv
 - Ir a PASO 2: ejecutar SQL en Supabase
 
 ### "Unauthorized" o "permission denied"
-- En Supabase → Auth → usuarios → buscar fila que creaste
+- En Supabase â†’ Auth â†’ usuarios â†’ buscar fila que creaste
 - Cambiar email_confirmed a TRUE
 - (O ignorar por ahora, test local funciona igual)
 
@@ -186,7 +186,7 @@ pip install supabase python-dotenv
 4. .env: 1 min
 5. Paquetes: 2 min
 6. Test: 3 min
-────────────────
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 TOTAL: 15 minutos hasta BD funcional
 ```
 
@@ -194,11 +194,11 @@ TOTAL: 15 minutos hasta BD funcional
 
 ## ARCHIVOS IMPORTANTES
 
-- `SCHEMA_SUPABASE_FINAL.sql` ← SQL a ejecutar en Supabase
-- `master/database.py` ← Funciones Python para usar BD
-- `EJEMPLO_INTEGRACION_ROUTES.py` ← Como integrar en routes.py
-- `EJEMPLO_INTEGRACION_CONSENSUS_ELECTION.py` ← Como integrar consenso/liderazgo
-- `GUIA_INTEGRACION.md` ← Documentacion completa
+- `SCHEMA_SUPABASE_FINAL.sql` â† SQL a ejecutar en Supabase
+- `master/database.py` â† Funciones Python para usar BD
+- `EJEMPLO_INTEGRACION_ROUTES.py` â† Como integrar en routes.py
+- `EJEMPLO_INTEGRACION_CONSENSUS_ELECTION.py` â† Como integrar consenso/liderazgo
+- `guia_completa_supabase.md` â† Documentacion completa
 
 ---
 
@@ -208,3 +208,4 @@ Si necesitas help:
 - Dashboard: https://supabase.com
 - Docs: https://supabase.com/docs
 - Discord: https://discord.supabase.io
+

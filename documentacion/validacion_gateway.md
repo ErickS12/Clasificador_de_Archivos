@@ -68,3 +68,4 @@ Orden funcional:
 - Revisar limites de tamano de archivo segun capacidad de nodos.
 - Auditar formato y nivel de logs periodicamente.
 - Alinear respuestas con [master/adapter.py](master/adapter.py) para mantener consistencia.
+

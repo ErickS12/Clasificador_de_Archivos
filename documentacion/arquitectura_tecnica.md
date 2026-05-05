@@ -113,10 +113,8 @@ shared/
 ### Areas
 
 - GET /categories
-- POST /areas
-- POST /areas/{area}/sub
-- DELETE /areas/{area}
-- DELETE /areas/{area}/sub/{subarea}
+
+El catálogo global es de solo lectura; ya no existen endpoints para crear o borrar áreas.
 
 ### Documentos
 
@@ -131,8 +129,8 @@ shared/
 - POST /admin/users
 - PUT /admin/users/{nombre_usuario}
 - DELETE /admin/users/{nombre_usuario}
-- DELETE /admin/areas/{nombre_usuario}/{area}
-- DELETE /admin/areas/{nombre_usuario}/{area}/{subarea}
+
+No hay endpoints activos para administrar áreas desde la API.
 
 ### Cluster
 
@@ -160,3 +158,4 @@ shared/
 - consolidar borrado coordinado entre nodos
 - consolidar sincronizacion de arranque en workers
 - pruebas de resiliencia en entorno LAN
+

@@ -14,6 +14,7 @@ Proporciona funciones para:
 
 from supabase import create_client, Client
 import os
+from datetime import datetime
 from typing import Optional, List, Dict, Any
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
@@ -298,6 +299,89 @@ def marcar_documento_eliminado(documento_id: str) -> bool:
     except Exception as e:
         print(f"Error eliminando documento: {e}")
         return False
+
+
+def crear_solicitud_borrado_cola(
+    documento_id: str,
+    usuario_id: str,
+    nombre_usuario: str,
+    nombre_archivo: str,
+    area: str,
+    subarea: Optional[str],
+) -> Optional[str]:
+    """Crear una solicitud de borrado en la cola asíncrona."""
+    try:
+        response = db.table("cola_borrados").insert({
+            "documento_id": documento_id,
+            "usuario_id": usuario_id,
+            "nombre_usuario": nombre_usuario,
+            "nombre_archivo": nombre_archivo,
+            "area": area,
+            "subarea": subarea,
+            "estado": "pendiente",
+            "intentos": 0,
+            "creado_en": datetime.utcnow().isoformat(),
+            "actualizado_en": datetime.utcnow().isoformat(),
+        }).execute()
+        return response.data[0]["id"] if response.data else None
+    except Exception as e:
+        print(f"Error creando solicitud de borrado: {e}")
+        return None
+
+
+def obtener_solicitud_borrado_activa(documento_id: str) -> Optional[Dict[str, Any]]:
+    """Obtener una solicitud de borrado activa para un documento."""
+    try:
+        response = (
+            db.table("cola_borrados")
+            .select("*")
+            .eq("documento_id", documento_id)
+            .in_("estado", ["pendiente", "procesando"])
+            .order("creado_en", desc=True)
+            .limit(1)
+            .execute()
+        )
+        return response.data[0] if response.data else None
+    except Exception as e:
+        print(f"Error obteniendo solicitud de borrado activa: {e}")
+        return None
+
+
+def obtener_solicitudes_borrado_pendientes(limite: int = 10) -> List[Dict[str, Any]]:
+    """Obtener solicitudes de borrado pendientes para procesar en background."""
+    try:
+        response = (
+            db.table("cola_borrados")
+            .select("*")
+            .eq("estado", "pendiente")
+            .order("creado_en", desc=False)
+            .limit(limite)
+            .execute()
+        )
+        return response.data if response.data else []
+    except Exception as e:
+        print(f"Error obteniendo solicitudes pendientes: {e}")
+        return []
+
+
+def actualizar_solicitud_borrado(cola_id: str, **campos) -> bool:
+    """Actualizar una solicitud de borrado en la cola."""
+    try:
+        db.table("cola_borrados").update(campos).eq("id", cola_id).execute()
+        return True
+    except Exception as e:
+        print(f"Error actualizando solicitud de borrado: {e}")
+        return False
+
+
+def obtener_solicitud_borrado_por_id(cola_id: str) -> Optional[Dict[str, Any]]:
+    """Obtener una solicitud de borrado de la cola por su id."""
+    try:
+        response = db.table("cola_borrados").select("*").eq("id", cola_id).single().execute()
+        return response.data if response.data else None
+    except Exception as e:
+        print(f"Error obteniendo solicitud de borrado por id: {e}")
+        return None
 
 
 # ── CONSENSO DE VOTOS ────────────────────────────────────────────────────────

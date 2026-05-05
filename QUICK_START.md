@@ -1,34 +1,34 @@
-# 🚀 GUÍA RÁPIDA: Los 5 Pasos Finales
+﻿# ðŸš€ GUÃA RÃPIDA: Los 5 Pasos Finales
 
 **Tiempo total: ~40 minutos**
 
 ---
 
-## ⏱️ PASO 1: LEE (5 MIN)
+## â±ï¸ PASO 1: LEE (5 MIN)
 
-Lee este archivo primero para entender qué va a pasar:
+Lee este archivo primero para entender quÃ© va a pasar:
 
 ```
-📄 COMPARACION_SCHEMA_ANTES_DESPUES.md
-   ↓
-   Entenderás qué cambia en la BD
+ðŸ“„ COMPARACION_SCHEMA_ANTES_DESPUES.md
+   â†“
+   EntenderÃ¡s quÃ© cambia en la BD
 ```
 
 ---
 
-## 💾 PASO 2: BACKUP (5 MIN)
+## ðŸ’¾ PASO 2: BACKUP (5 MIN)
 
-**MÁS IMPORTANTE ANTES DE TOCAR LA BD**
+**MÃS IMPORTANTE ANTES DE TOCAR LA BD**
 
-### Opción A: Supabase Dashboard (Recomendado)
+### OpciÃ³n A: Supabase Dashboard (Recomendado)
 ```
 1. Ve a: https://app.supabase.com
 2. Selecciona tu proyecto
-3. Settings → Backups → Create backup
+3. Settings â†’ Backups â†’ Create backup
 4. Espera a que se complete
 ```
 
-### Opción B: Exportar datos (Como respaldo adicional)
+### OpciÃ³n B: Exportar datos (Como respaldo adicional)
 ```
 1. Ve a SQL Editor en Supabase
 2. Ejecuta:
@@ -40,7 +40,7 @@ Lee este archivo primero para entender qué va a pasar:
 
 ---
 
-## 🗄️ PASO 3: MIGRACIÓN SQL (2 MIN)
+## ðŸ—„ï¸ PASO 3: MIGRACIÃ“N SQL (2 MIN)
 
 **Ejecutar en Supabase:**
 
@@ -48,24 +48,24 @@ Lee este archivo primero para entender qué va a pasar:
 1. Abre: https://app.supabase.com/project/[TU-PROYECTO]/sql/new
 2. Abre el archivo: MIGRACION_CATALOGO_GLOBAL.sql (en tu carpeta)
 3. Copia TODO el contenido
-4. Pégalo en Supabase SQL Editor
-5. Presiona: "Run" (botón azul)
+4. PÃ©galo en Supabase SQL Editor
+5. Presiona: "Run" (botÃ³n azul)
 6. Espera a que complete (toma ~30 segundos)
 ```
 
-**Debería ver algo como:**
+**DeberÃ­a ver algo como:**
 ```
-✅ CREATE TABLE
-✅ INSERT 3 rows into tematicas
-✅ INSERT 8 rows into subtematicas
-✅ DROP TRIGGER
-✅ CREATE VIEW
-✅ SELECT (resultados de verificación)
+âœ… CREATE TABLE
+âœ… INSERT 3 rows into tematicas
+âœ… INSERT 8 rows into subtematicas
+âœ… DROP TRIGGER
+âœ… CREATE VIEW
+âœ… SELECT (resultados de verificaciÃ³n)
 ```
 
 ---
 
-## 🤖 PASO 4: ENTRENAR MODELO (5-10 MIN)
+## ðŸ¤– PASO 4: ENTRENAR MODELO (5-10 MIN)
 
 **En tu terminal local:**
 
@@ -74,7 +74,7 @@ cd c:\Clasificador_de_Archivos
 python worker/entrenar_modelo.py
 ```
 
-**Debería ver:**
+**DeberÃ­a ver:**
 ```
 Loading training data...
 Training model (hierarchical labels)...
@@ -86,7 +86,7 @@ Training complete!
 
 ---
 
-## ✅ PASO 5: VERIFICAR (10 MIN)
+## âœ… PASO 5: VERIFICAR (10 MIN)
 
 ### 5.1: Verificar estructura en Supabase
 ```sql
@@ -94,7 +94,7 @@ Training complete!
 
 -- Ver tematicas globales
 SELECT id, nombre FROM tematicas;
--- Esperado: 3 filas (Tecnología, Ciencias, Otros)
+-- Esperado: 3 filas (TecnologÃ­a, Ciencias, Otros)
 
 -- Ver subtematicas
 SELECT t.nombre AS tematica, s.nombre AS subtematica
@@ -106,13 +106,13 @@ ORDER BY t.nombre, s.nombre;
 -- Verificar que NO hay usuario_id
 SELECT column_name FROM information_schema.columns
 WHERE table_name = 'tematicas';
--- NO debe aparecer usuario_id ✓
+-- NO debe aparecer usuario_id âœ“
 ```
 
 ### 5.2: Probar API (desde terminal)
 
 ```bash
-# Verificar que servidor está corriendo
+# Verificar que servidor estÃ¡ corriendo
 # Terminal 1:
 cd c:\Clasificador_de_Archivos
 python master/main.py
@@ -122,19 +122,19 @@ cd c:\Clasificador_de_Archivos
 python worker/main.py
 
 # Terminal 3: Pruebas
-# Prueba 1: Ver catálogo global
+# Prueba 1: Ver catÃ¡logo global
 curl -X GET http://localhost:8000/categories
 
 # Esperado:
 # {
 #   "categorias_globales": [
-#     "Tecnología/Inteligencia Artificial",
-#     "Tecnología/Redes",
-#     "Tecnología/Bases de Datos",
-#     "Tecnología/Sistemas Operativos",
-#     "Tecnología/Sistemas Distribuidos",
-#     "Ciencias/Biología",
-#     "Ciencias/Matemáticas",
+#     "TecnologÃ­a/Inteligencia Artificial",
+#     "TecnologÃ­a/Redes",
+#     "TecnologÃ­a/Bases de Datos",
+#     "TecnologÃ­a/Sistemas Operativos",
+#     "TecnologÃ­a/Sistemas Distribuidos",
+#     "Ciencias/BiologÃ­a",
+#     "Ciencias/MatemÃ¡ticas",
 #     "Otros/General"
 #   ]
 # }
@@ -144,117 +144,118 @@ curl -X POST http://localhost:8000/upload \
   -H "Authorization: Bearer test-token" \
   -F "archivo=@test.pdf"
 
-# Debería clasificar automáticamente con consenso de 3 workers
+# DeberÃ­a clasificar automÃ¡ticamente con consenso de 3 workers
 ```
 
 ---
 
-## ✅ CHECKLIST POST-MIGRACIÓN
+## âœ… CHECKLIST POST-MIGRACIÃ“N
 
 ```
-Después de completar los 5 pasos, verificar:
+DespuÃ©s de completar los 5 pasos, verificar:
 
 Base de Datos:
-  ☐ Tabla tematicas tiene 3 registros (sin usuario_id)
-  ☐ Tabla subtematicas tiene 8 registros
-  ☐ Vista vista_arbol_usuario funciona sin errores
-  ☐ NO hay columna usuario_id en tematicas
+  â˜ Tabla tematicas tiene 3 registros (sin usuario_id)
+  â˜ Tabla subtematicas tiene 8 registros
+  â˜ Vista vista_arbol_usuario funciona sin errores
+  â˜ NO hay columna usuario_id en tematicas
 
 Modelo:
-  ☐ Archivo worker/modelo_clasificador.pkl fue creado
-  ☐ Size > 1KB (no está vacío)
+  â˜ Archivo worker/modelo_clasificador.pkl fue creado
+  â˜ Size > 1KB (no estÃ¡ vacÃ­o)
 
 API:
-  ☐ GET /categories devuelve 8 categorías globales
-  ☐ POST /upload clasifica automáticamente
-  ☐ Logs muestran: "3/3 workers agree" (consenso)
-  ☐ No hay errores de "foreign key" en logs
+  â˜ GET /categories devuelve 8 categorÃ­as globales
+  â˜ POST /upload clasifica automÃ¡ticamente
+  â˜ Logs muestran: "3/3 workers agree" (consenso)
+  â˜ No hay errores de "foreign key" en logs
 
 Testing:
-  ☐ Probé con 1+ PDF
-  ☐ Subí archivo con usuario autenticado
-  ☐ Descargué archivo subido
-  ☐ Clasificación fue automática
+  â˜ ProbÃ© con 1+ PDF
+  â˜ SubÃ­ archivo con usuario autenticado
+  â˜ DescarguÃ© archivo subido
+  â˜ ClasificaciÃ³n fue automÃ¡tica
 ```
 
 ---
 
-## 🆘 SI ALGO SALE MAL
+## ðŸ†˜ SI ALGO SALE MAL
 
 ### Error: "Column usuario_id does not exist"
 ```
-→ Significa que la migración completó pero vistas viejas aún existen
-→ Solución: Ver GUIA_APLICAR_CAMBIOS_SUPABASE.md sección "Problemas"
+â†’ Significa que la migraciÃ³n completÃ³ pero vistas viejas aÃºn existen
+â†’ SoluciÃ³n: Ver GUIA_APLICAR_CAMBIOS_SUPABASE.md secciÃ³n "Problemas"
 ```
 
 ### Error: "Foreign key constraint violated"
 ```
-→ Hay documentos viejos que referencian tematicas borradas
-→ Solución: Migración lo maneja automáticamente
-→ Si persiste: Ver GUIA_APLICAR_CAMBIOS_SUPABASE.md
+â†’ Hay documentos viejos que referencian tematicas borradas
+â†’ SoluciÃ³n: MigraciÃ³n lo maneja automÃ¡ticamente
+â†’ Si persiste: Ver GUIA_APLICAR_CAMBIOS_SUPABASE.md
 ```
 
 ### El modelo no entrena
 ```
-→ Asegurate que:
+â†’ Asegurate que:
   - Python 3.8+
   - scikit-learn instalado (pip install scikit-learn)
-  - PDFs de training existen en código
-→ Solución: Ver worker/entrenar_modelo.py para detalles
+  - PDFs de training existen en cÃ³digo
+â†’ SoluciÃ³n: Ver worker/entrenar_modelo.py para detalles
 ```
 
 ### POST /upload falla
 ```
-→ Probables causas:
+â†’ Probables causas:
   1. Modelo no entrenado (ejecuta paso 4)
-  2. Workers no están corriendo (startup los 3)
+  2. Workers no estÃ¡n corriendo (startup los 3)
   3. BD no migrada (ejecuta paso 3)
-→ Solución: Revisar logs en terminal
+â†’ SoluciÃ³n: Revisar logs en terminal
 ```
 
 ---
 
-## 📚 DOCUMENTACIÓN COMPLETA
+## ðŸ“š DOCUMENTACIÃ“N COMPLETA
 
-Si necesitas más detalles:
+Si necesitas mÃ¡s detalles:
 
 | Pregunta | Archivo |
 |----------|---------|
-| "¿Qué cambió exactamente?" | COMPARACION_SCHEMA_ANTES_DESPUES.md |
-| "¿Cómo ejecuto la migración?" | GUIA_APLICAR_CAMBIOS_SUPABASE.md |
-| "¿Cuál es el impacto?" | RESUMEN_CAMBIOS_FINALES.md |
-| "¿Qué pasa si falla?" | GUIA_APLICAR_CAMBIOS_SUPABASE.md (sección Rollback) |
-| "¿Cuándo hacer cada cosa?" | Este archivo (QUICK_START.md) |
+| "Â¿QuÃ© cambiÃ³ exactamente?" | COMPARACION_SCHEMA_ANTES_DESPUES.md |
+| "Â¿CÃ³mo ejecuto la migraciÃ³n?" | GUIA_APLICAR_CAMBIOS_SUPABASE.md |
+| "Â¿CuÃ¡l es el impacto?" | RESUMEN_CAMBIOS_FINALES.md |
+| "Â¿QuÃ© pasa si falla?" | GUIA_APLICAR_CAMBIOS_SUPABASE.md (secciÃ³n Rollback) |
+| "Â¿CuÃ¡ndo hacer cada cosa?" | Este archivo (QUICK_START.md) |
 
 ---
 
-## 🎯 RESUMEN
+## ðŸŽ¯ RESUMEN
 
 ```
 ANTES:
-Juan crea "Mi IA" → Maria crea "IA" → ML confundido ❌
+Juan crea "Mi IA" â†’ Maria crea "IA" â†’ ML confundido âŒ
 
-DESPUÉS:
-Catálogo fijo para todos:
-├─ Tecnología/Inteligencia Artificial
-├─ Tecnología/Redes
-├─ Ciencias/Biología
-└─ Otros/General
+DESPUÃ‰S:
+CatÃ¡logo fijo para todos:
+â”œâ”€ TecnologÃ­a/Inteligencia Artificial
+â”œâ”€ TecnologÃ­a/Redes
+â”œâ”€ Ciencias/BiologÃ­a
+â””â”€ Otros/General
 
-Juan sube PDF → Clasificado automáticamente ✅
-Maria sube PDF → Clasificado automáticamente ✅
-Ambos ven su catálogo igual → ML consistente ✅
+Juan sube PDF â†’ Clasificado automÃ¡ticamente âœ…
+Maria sube PDF â†’ Clasificado automÃ¡ticamente âœ…
+Ambos ven su catÃ¡logo igual â†’ ML consistente âœ…
 ```
 
 ---
 
-## 🚀 ¿LISTO PARA COMENZAR?
+## ðŸš€ Â¿LISTO PARA COMENZAR?
 
 **Ahora:**
 1. Abre: `COMPARACION_SCHEMA_ANTES_DESPUES.md`
-2. Lee la sección "ANTES" vs "DESPUÉS"
-3. Luego vuelve aquí y sigue los 5 pasos
+2. Lee la secciÃ³n "ANTES" vs "DESPUÃ‰S"
+3. Luego vuelve aquÃ­ y sigue los 5 pasos
 
 **Necesitas 40 minutos sin interrupciones.**
 
-**¡Adelante!** 🚀
+**Â¡Adelante!** ðŸš€
+

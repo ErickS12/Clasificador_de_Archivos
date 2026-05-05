@@ -60,7 +60,7 @@ shared/
 ## Contratos entre modulos
 
 - consensus <-> worker:
-  - request: archivo + areas permitidas
+  - request: archivo + categorias permitidas
   - response: area clasificada
 
 - election <-> leader_db:
@@ -74,9 +74,9 @@ shared/
 ## Endpoints integrados
 
 - Auth: /register, /login, /logout
-- Areas: /categories, /areas, /areas/{area}/sub
+- Categorias: /categories
 - Documentos: /upload, /files, /download, /document
-- Admin: /admin/users y /admin/areas
+- Admin: /admin/users
 - Cluster: /heartbeat, /leader, /election/start, /election/coordinator
 
 ## Dependencias de integracion
@@ -92,3 +92,4 @@ shared/
 - completar borrado coordinado entre nodos
 - completar sincronizacion de arranque en workers
 - ampliar pruebas de recuperacion ante falla de nodo
+

@@ -1,4 +1,4 @@
-# Frontend del Clasificador Distribuido
+﻿# Frontend del Clasificador Distribuido
 
 Guia de integracion del cliente web con la API del sistema.
 
@@ -59,14 +59,14 @@ VITE_API_URL=http://localhost:8000
 - Login y registro
 - Dashboard de usuario para carga, listado, descarga y eliminacion
 - Vista de clasificacion con votos por nodo
-- Panel administrativo para gestion de usuarios y areas
+- Panel administrativo para gestion de usuarios
 
 ## Flujo recomendado
 
 1. Usuario inicia sesion y guarda token
-2. Navega areas y subareas permitidas
+2. Consulta categorias globales disponibles
 3. Sube PDF y visualiza resultado de clasificacion
-4. Consulta arbol de documentos
+4. Consulta listado de documentos
 5. Descarga o elimina documentos segun permisos
 
 ## Comandos de desarrollo
@@ -80,3 +80,4 @@ npm run dev
 
 - En entorno local, usar localhost
 - En LAN, configurar VITE_API_URL con la URL del nodo lider
+

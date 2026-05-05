@@ -1,4 +1,4 @@
-# Resumen Ejecutivo
+﻿# Resumen Ejecutivo
 # Clasificador Distribuido de Archivos Cientificos
 
 ## Objetivo
@@ -10,9 +10,9 @@ Backend distribuido para clasificar documentos PDF por area tematica con alta di
 ```text
 Cliente
   |
-  v
-Nodo lider (master)
   |- validacion y seguridad
+  |- consenso de clasificacion
+  |- gestion de metadatos en Supabase
   |- consenso de clasificacion
   |- gestion de metadatos
   |
@@ -33,7 +33,7 @@ Servicios compartidos
 - Redireccion al lider activo: activa
 - Replicacion de archivos por nodos: activa
 - Seguridad por token y roles: activa
-- Persistencia de dominio en JSON: activa
+- Persistencia de dominio en Supabase: activa
 
 ## Modulos principales
 
@@ -49,9 +49,9 @@ Servicios compartidos
 ## Endpoints de negocio
 
 - Auth: /register, /login, /logout
-- Areas: /categories, /areas, /areas/{area}/sub
+- Categorias: /categories
 - Documentos: /upload, /files, /download, /document
-- Admin: /admin/users, /admin/areas
+- Admin: /admin/users
 
 ## Endpoints de cluster
 
@@ -85,3 +85,4 @@ Servicios compartidos
 ## Conclusion
 
 La base distribuida del sistema esta operativa, con separacion clara por responsabilidades y capacidad de evolucion hacia un despliegue de red completo.
+

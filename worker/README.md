@@ -1,25 +1,25 @@
-# Worker — Nodo de Procesamiento
+﻿# Worker â€” Nodo de Procesamiento
 
-Nodo encargado de procesar PDFs: extracción de texto y clasificación automática.
+Nodo encargado de procesar PDFs: extracciÃ³n de texto y clasificaciÃ³n automÃ¡tica.
 
 ## Estructura
 
-- `main.py` — Servidor FastAPI que expone endpoints de procesamiento
-- `extractor.py` — Extracción de texto desde PDFs (PyMuPDF)
-- `classifier.py` — Clasificación TF-IDF + LogisticRegression con persistencia de modelo
-- `sync.py` — (Pendiente Fase 6) Sincronización de datos al iniciar
-- `entrenar_modelo.py` — Script para entrenar/reentrenar el modelo manualmente
+- `main.py` â€” Servidor FastAPI que expone endpoints de procesamiento
+- `extractor.py` â€” ExtracciÃ³n de texto desde PDFs (PyMuPDF)
+- `classifier.py` â€” ClasificaciÃ³n TF-IDF + LogisticRegression con persistencia de modelo
+- `sync.py` â€” (Pendiente Fase 6) SincronizaciÃ³n de datos al iniciar
+- `entrenar_modelo.py` â€” Script para entrenar/reentrenar el modelo manualmente
 
-## Persistencia del Modelo de Clasificación
+## Persistencia del Modelo de ClasificaciÃ³n
 
-### Cómo funciona
+### CÃ³mo funciona
 
-El modelo de clasificación se entrena una sola vez y se guarda en disco:
+El modelo de clasificaciÃ³n se entrena una sola vez y se guarda en disco:
 
 1. **Primer inicio**: El worker entrena el modelo (`_entrenar_modelo()`) y lo guarda en `modelo_clasificador.pkl`
 2. **Inicios posteriores**: El worker carga el modelo desde disco (`_cargar_modelo()`), tardando milisegundos
 
-### Ubicación del Modelo
+### UbicaciÃ³n del Modelo
 
 ```
 worker/modelo_clasificador.pkl
@@ -29,13 +29,13 @@ Este archivo NO se versiona en git (ver `.gitignore`).
 
 ### Reentrenamiento Manual
 
-Si necesitas entrenar el modelo desde cero (por ejemplo, después de actualizar `TRAINING_DATA`):
+Si necesitas entrenar el modelo desde cero (por ejemplo, despuÃ©s de actualizar `TRAINING_DATA`):
 
 ```bash
 python worker/entrenar_modelo.py
 ```
 
-El script pedirá confirmación si el modelo ya existe.
+El script pedirÃ¡ confirmaciÃ³n si el modelo ya existe.
 
 ## Endpoints
 
@@ -47,11 +47,11 @@ Clasifica un PDF.
 ```
 Content-Type: multipart/form-data
 - archivo: File (PDF)
-- areas_usuario: JSON string con áreas permitidas
+- areas_usuario: JSON string con Ã¡reas permitidas
 
 Ejemplo:
 {
-  "areas_usuario": ["Redes", "Protocolos", "Topologías", "General"]
+  "areas_usuario": ["Redes", "Protocolos", "TopologÃ­as", "General"]
 }
 ```
 
@@ -64,7 +64,7 @@ Ejemplo:
 
 ### GET /heartbeat
 
-Responde para confirmar que el nodo está vivo (parte del protocolo de elección de líder).
+Responde para confirmar que el nodo estÃ¡ vivo (parte del protocolo de elecciÃ³n de lÃ­der).
 
 **Response:**
 ```json
@@ -76,10 +76,10 @@ Responde para confirmar que el nodo está vivo (parte del protocolo de elección
 
 ## Variables de Entorno
 
-- `NODO_ID`: ID único del nodo (1-4). Usado en elección de líder. Default: varía según worker
-- `ALMACENAMIENTO_NODO`: Ruta donde almacenar réplicas de documentos. Default: `../storage/node1`
+- `NODO_ID`: ID Ãºnico del nodo (1-4). Usado en elecciÃ³n de lÃ­der. Default: varÃ­a segÃºn worker
+- `ALMACENAMIENTO_NODO`: Ruta donde almacenar rÃ©plicas de documentos. Default: `../storage/node1`
 
-### Ejemplo de Ejecución
+### Ejemplo de EjecuciÃ³n
 
 ```bash
 # Worker 1 (nodo 1)
@@ -100,22 +100,23 @@ uvicorn main:app --port 5003
 
 ## Dependencias
 
-Ver `requirements.txt` en la raíz del proyecto.
+Ver `requirements.txt` en la raÃ­z del proyecto.
 
 Principales:
-- `scikit-learn` — Modelos ML y TF-IDF
-- `PyMuPDF` — Extracción de texto de PDFs
-- `joblib` — Serialización de modelos (incluido en scikit-learn)
-- `FastAPI` — API REST
-- `requests` — Comunicación con master
+- `scikit-learn` â€” Modelos ML y TF-IDF
+- `PyMuPDF` â€” ExtracciÃ³n de texto de PDFs
+- `joblib` â€” SerializaciÃ³n de modelos (incluido en scikit-learn)
+- `FastAPI` â€” API REST
+- `requests` â€” ComunicaciÃ³n con master
 
-## Integración con Cluster
+## IntegraciÃ³n con Cluster
 
-El worker se integra con el sistema de elección de líder (`shared/election.py`):
+El worker se integra con el sistema de elecciÃ³n de lÃ­der (`shared/election.py`):
 
-1. Al iniciar, se registra en el clúster
-2. Participa en heartbeat del líder
-3. Si el líder cae, participa en la elección (algoritmo Bully)
-4. Si gana la elección, activa las rutas del maestro (`master/routes.py`)
+1. Al iniciar, se registra en el clÃºster
+2. Participa en heartbeat del lÃ­der
+3. Si el lÃ­der cae, participa en la elecciÃ³n (algoritmo Bully)
+4. Si gana la elecciÃ³n, activa las rutas del maestro (`master/routes.py`)
 
-Ver `shared/election.py` para detalles del protocolo de elección.
+Ver `shared/election.py` para detalles del protocolo de elecciÃ³n.
+

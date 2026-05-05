@@ -1,27 +1,27 @@
-# 📋 Guía: Aplicar Cambios en Supabase
+﻿# ðŸ“‹ GuÃ­a: Aplicar Cambios en Supabase
 
-## 🚨 SITUACIÓN ACTUAL
+## ðŸš¨ SITUACIÃ“N ACTUAL
 
 | Elemento | Estado Local | Estado Supabase |
 |----------|--------------|-----------------|
-| Archivo SQL | ✅ ACTUALIZADO (catálogo global) | ❌ DESACTUALIZADO (por usuario) |
-| Python code | ✅ ACTUALIZADO | - |
-| Workers | ✅ ACTUALIZADO | - |
-| Base de Datos | ❌ DESINCRONIZADA | Contiene estructura vieja |
+| Archivo SQL | âœ… ACTUALIZADO (catÃ¡logo global) | âŒ DESACTUALIZADO (por usuario) |
+| Python code | âœ… ACTUALIZADO | - |
+| Workers | âœ… ACTUALIZADO | - |
+| Base de Datos | âŒ DESINCRONIZADA | Contiene estructura vieja |
 
-**Acción necesaria:** Aplicar la migración en Supabase para sincronizar con el código.
+**AcciÃ³n necesaria:** Aplicar la migraciÃ³n en Supabase para sincronizar con el cÃ³digo.
 
 ---
 
-## 📝 PASOS PARA APLICAR LA MIGRACIÓN
+## ðŸ“ PASOS PARA APLICAR LA MIGRACIÃ“N
 
-### 1️⃣ HACER BACKUP (⚠️ CRÍTICO)
+### 1ï¸âƒ£ HACER BACKUP (âš ï¸ CRÃTICO)
 
 ```bash
-# Opción A: Supabase Dashboard
+# OpciÃ³n A: Supabase Dashboard
 # 1. Ve a: https://app.supabase.com
 # 2. Selecciona tu proyecto
-# 3. SQL Editor → "Create a new query"
+# 3. SQL Editor â†’ "Create a new query"
 # 4. Copia y ejecuta:
 
 SELECT * FROM documentos LIMIT 1;
@@ -29,31 +29,31 @@ SELECT * FROM tematicas LIMIT 5;
 -- Si devuelve resultados, tu BD tiene datos
 ```
 
-**Recomendación:** Hacer backup manual:
+**RecomendaciÃ³n:** Hacer backup manual:
 - Descargar CSV de tablas importantes desde Supabase Dashboard
 - O ejecutar: `pg_dump` si tienes acceso directo
 
 ---
 
-### 2️⃣ EJECUTAR LA MIGRACIÓN
+### 2ï¸âƒ£ EJECUTAR LA MIGRACIÃ“N
 
-#### **Opción A: Supabase SQL Editor (Recomendado)**
+#### **OpciÃ³n A: Supabase SQL Editor (Recomendado)**
 
 ```
 1. Abre: https://app.supabase.com/project/[tu-proyecto]/sql/new
 2. Copia TODO el contenido de: MIGRACION_CATALOGO_GLOBAL.sql
 3. Pega en el editor
-4. Presiona: "Run" (botón azul)
+4. Presiona: "Run" (botÃ³n azul)
 5. Espera a que complete
 ```
 
-#### **Opción B: Desde terminal (Si tienes psql instalado)**
+#### **OpciÃ³n B: Desde terminal (Si tienes psql instalado)**
 
 ```bash
 # Configurar variables de entorno
 export PGPASSWORD="tu-password-supabase"
 
-# Ejecutar migración
+# Ejecutar migraciÃ³n
 psql -h "db.tu-proyecto.supabase.co" \
      -U "postgres" \
      -d "postgres" \
@@ -62,25 +62,25 @@ psql -h "db.tu-proyecto.supabase.co" \
 
 ---
 
-### 3️⃣ VERIFICAR LA MIGRACIÓN
+### 3ï¸âƒ£ VERIFICAR LA MIGRACIÃ“N
 
-Después de ejecutar, deberías ver algo como:
+DespuÃ©s de ejecutar, deberÃ­as ver algo como:
 
 ```
 elemento              | cantidad
 ----------------------------------
-Temáticas             | 3
+TemÃ¡ticas             | 3
 Subtematicas          | 8
-Documentos activos    | 0 (o más si hay datos)
+Documentos activos    | 0 (o mÃ¡s si hay datos)
 ```
 
-**Si ves esto:** ✅ **Migración exitosa**
+**Si ves esto:** âœ… **MigraciÃ³n exitosa**
 
 ---
 
-### 4️⃣ PROBAR QUE TODO FUNCIONA
+### 4ï¸âƒ£ PROBAR QUE TODO FUNCIONA
 
-#### **Test 1: Verificar catálogo global**
+#### **Test 1: Verificar catÃ¡logo global**
 
 ```bash
 # Terminal
@@ -90,9 +90,9 @@ curl -X GET http://localhost:8000/categories \
 # Respuesta esperada:
 {
   "categorias_globales": [
-    "Tecnología/Inteligencia Artificial",
-    "Tecnología/Redes",
-    "Tecnología/Bases de Datos",
+    "TecnologÃ­a/Inteligencia Artificial",
+    "TecnologÃ­a/Redes",
+    "TecnologÃ­a/Bases de Datos",
     ...
   ]
 }
@@ -109,7 +109,7 @@ curl -X POST http://localhost:8000/upload \
 # Respuesta esperada:
 {
   "archivo": "paper.pdf",
-  "clasificado_en": "Tecnología/Redes",  # Clasificado automáticamente
+  "clasificado_en": "TecnologÃ­a/Redes",  # Clasificado automÃ¡ticamente
   "replicado_en": ["node1", "node2", "node3"],
   "consenso": {...}
 }
@@ -117,32 +117,32 @@ curl -X POST http://localhost:8000/upload \
 
 ---
 
-## ⚠️ POSIBLES PROBLEMAS Y SOLUCIONES
+## âš ï¸ POSIBLES PROBLEMAS Y SOLUCIONES
 
 ### Problema 1: "Column usuario_id does not exist"
 ```
-❌ ERROR: column "usuario_id" does not exist
+âŒ ERROR: column "usuario_id" does not exist
 ```
 
-**Causa:** Vistas antiguas aún hacen referencia a usuario_id
+**Causa:** Vistas antiguas aÃºn hacen referencia a usuario_id
 
-**Solución:**
+**SoluciÃ³n:**
 ```sql
 DROP VIEW IF EXISTS vista_arbol_usuario CASCADE;
 DROP VIEW IF EXISTS vista_documento_completo CASCADE;
--- Luego ejecutar la migración de nuevo
+-- Luego ejecutar la migraciÃ³n de nuevo
 ```
 
 ---
 
 ### Problema 2: "Foreign key constraint violated"
 ```
-❌ ERROR: insert or update on table "documentos" violates foreign key constraint
+âŒ ERROR: insert or update on table "documentos" violates foreign key constraint
 ```
 
 **Causa:** Documentos viejos referencia tematicas que se borraron
 
-**Solución:**
+**SoluciÃ³n:**
 ```sql
 -- Mover documentos viejos a "Otros/General"
 UPDATE documentos 
@@ -154,25 +154,25 @@ WHERE tematica_id NOT IN (SELECT id FROM tematicas);
 
 ### Problema 3: "Uniqueness violation" en nombre de tematica
 ```
-❌ ERROR: duplicate key value violates unique constraint "uq_tematica_nombre"
+âŒ ERROR: duplicate key value violates unique constraint "uq_tematica_nombre"
 ```
 
-**Causa:** Intentar insertar categoría que ya existe
+**Causa:** Intentar insertar categorÃ­a que ya existe
 
-**Solución:** Ya está en el script `ON CONFLICT (nombre) DO NOTHING`
-- Simplemente ejecutar la migración de nuevo
+**SoluciÃ³n:** Ya estÃ¡ en el script `ON CONFLICT (nombre) DO NOTHING`
+- Simplemente ejecutar la migraciÃ³n de nuevo
 
 ---
 
-## 📊 VERIFICACIÓN DETALLADA
+## ðŸ“Š VERIFICACIÃ“N DETALLADA
 
 Ejecuta estas queries para verificar todo:
 
 ```sql
--- Ver catálogo global
+-- Ver catÃ¡logo global
 SELECT id, nombre, es_general FROM tematicas;
 
--- Ver subcategorías
+-- Ver subcategorÃ­as
 SELECT t.nombre AS tematica, s.nombre AS subtematica 
 FROM subtematicas s
 JOIN tematicas t ON t.id = s.tematica_id
@@ -187,34 +187,34 @@ SELECT * FROM vista_arbol_usuario LIMIT 1;
 
 ---
 
-## 🔄 ROLLBACK (Si algo sale mal)
+## ðŸ”„ ROLLBACK (Si algo sale mal)
 
-Si necesitas volver atrás:
+Si necesitas volver atrÃ¡s:
 
 ```sql
--- OPCIÓN 1: Restaurar desde backup (recomendado)
--- Usa Supabase Dashboard → Backups → Restore
+-- OPCIÃ“N 1: Restaurar desde backup (recomendado)
+-- Usa Supabase Dashboard â†’ Backups â†’ Restore
 
--- OPCIÓN 2: Manual (si no tienes backup)
--- Eliminar nuevas categorías y restaurar viejas
+-- OPCIÃ“N 2: Manual (si no tienes backup)
+-- Eliminar nuevas categorÃ­as y restaurar viejas
 DELETE FROM subtematicas WHERE id IN (
     SELECT s.id FROM subtematicas s
     JOIN tematicas t ON t.id = s.tematica_id
-    WHERE t.nombre IN ('Tecnología', 'Ciencias', 'Otros')
+    WHERE t.nombre IN ('TecnologÃ­a', 'Ciencias', 'Otros')
 );
 
-DELETE FROM tematicas WHERE nombre IN ('Tecnología', 'Ciencias', 'Otros');
+DELETE FROM tematicas WHERE nombre IN ('TecnologÃ­a', 'Ciencias', 'Otros');
 -- Luego restaurar datos anteriores desde backup_documentos
 ```
 
 ---
 
-## ✅ CHECKLIST POST-MIGRACIÓN
+## âœ… CHECKLIST POST-MIGRACIÃ“N
 
-- [ ] Migración ejecutada sin errores
-- [ ] SELECT de verificación devuelve resultados correctos
-- [ ] GET /categories devuelve catálogo global
-- [ ] POST /upload clasifica automáticamente
+- [ ] MigraciÃ³n ejecutada sin errores
+- [ ] SELECT de verificaciÃ³n devuelve resultados correctos
+- [ ] GET /categories devuelve catÃ¡logo global
+- [ ] POST /upload clasifica automÃ¡ticamente
 - [ ] GET /files muestra documentos del usuario
 - [ ] Logs no muestran errores de FK
 - [ ] Prueba con 2-3 PDFs
@@ -222,7 +222,7 @@ DELETE FROM tematicas WHERE nombre IN ('Tecnología', 'Ciencias', 'Otros');
 
 ---
 
-## 📞 SOPORTE
+## ðŸ“ž SOPORTE
 
 Si tienes problemas:
 
@@ -247,37 +247,38 @@ Si tienes problemas:
 
 ---
 
-## 🎓 RESUMEN DEL CAMBIO
+## ðŸŽ“ RESUMEN DEL CAMBIO
 
 **ANTES:**
 ```
 Usuario A
-├─ Mi Área 1
-│  ├─ Subárea A
-│  └─ Subárea B
-└─ Mi Área 2
+â”œâ”€ Mi Ãrea 1
+â”‚  â”œâ”€ SubÃ¡rea A
+â”‚  â””â”€ SubÃ¡rea B
+â””â”€ Mi Ãrea 2
 
 Usuario B
-└─ Su Área
+â””â”€ Su Ãrea
 ```
 
 **AHORA:**
 ```
-CATÁLOGO GLOBAL (igual para todos)
-├─ Tecnología
-│  ├─ Inteligencia Artificial
-│  ├─ Redes
-│  └─ Bases de Datos
-├─ Ciencias
-│  ├─ Biología
-│  └─ Matemáticas
-└─ Otros
-   └─ General
+CATÃLOGO GLOBAL (igual para todos)
+â”œâ”€ TecnologÃ­a
+â”‚  â”œâ”€ Inteligencia Artificial
+â”‚  â”œâ”€ Redes
+â”‚  â””â”€ Bases de Datos
+â”œâ”€ Ciencias
+â”‚  â”œâ”€ BiologÃ­a
+â”‚  â””â”€ MatemÃ¡ticas
+â””â”€ Otros
+   â””â”€ General
 
-Los documentos de cada usuario se clasifican automáticamente aquí.
+Los documentos de cada usuario se clasifican automÃ¡ticamente aquÃ­.
 Cada usuario solo ve sus propios documentos (usuario_id).
 ```
 
 ---
 
-**¿Listo?** 🚀 Ejecuta la migración ahora!
+**Â¿Listo?** ðŸš€ Ejecuta la migraciÃ³n ahora!
+

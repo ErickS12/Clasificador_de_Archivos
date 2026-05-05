@@ -95,3 +95,4 @@ shared/
 4) Ejecutar pruebas de upload/download
 5) Simular caida de lider para validar failover
 ```
+
