@@ -1,5 +1,6 @@
 import React from 'react';
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
+
 import {
   FileText,
   BookOpen,
@@ -13,6 +14,16 @@ import {
 
 const SidebarUsuario = () => {
 
+   const navigate = useNavigate();
+
+  const handleLogout = () => {
+    //  limpiar sesión
+    localStorage.clear(); // elimina token, rol, etc.
+
+    // redirigir sin recargar la app
+    navigate("/", { replace: true });
+  };
+
   const tematicas = [
     { name: 'Inteligencia Artificial', ruta: 'inteligencia-artificial', icon: <BrainCircuit className="w-4 h-4" /> },
     { name: 'Machine Learning', ruta: 'machine-learning', icon: <Cpu className="w-4 h-4" /> },
@@ -22,6 +33,7 @@ const SidebarUsuario = () => {
   ];
 
   return (
+    
     <aside className="w-64 min-w-[260px] bg-[#0f172a] text-slate-300 flex flex-col min-h-screen sticky top-0 flex-shrink-0 border-r border-slate-800">
 
       {/* HEADER */}
@@ -121,7 +133,7 @@ const SidebarUsuario = () => {
           </div>
         </div>
 
-        <button className="w-full flex items-center gap-3 px-4 py-3 hover:bg-red-500/10 rounded-xl text-sm font-bold text-slate-400 hover:text-red-400 transition-all group">
+        <button  onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-red-500/10 rounded-xl text-sm font-bold text-slate-400 hover:text-red-400 transition-all group">
           <LogOut className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
           Cerrar Sesión
         </button>

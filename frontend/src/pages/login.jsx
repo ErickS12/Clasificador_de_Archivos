@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 import { User, Lock, Mail, CreditCard, FileText } from 'lucide-react';
 
 const Login = () => {
@@ -13,19 +12,58 @@ const Login = () => {
   });
   const [error, setError] = useState('');
 
+  //Conexión con el backend
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!isLogin && formData.password !== formData.confirmPassword) {
-      setError('Las contraseñas no coinciden');
-      return;
+    setError('');
+
+    try {
+      // Validación registro
+      if (!isLogin && formData.password !== formData.confirmPassword) {
+        setError('Las contraseñas no coinciden');
+        return;
+      }
+
+      // URL dinámica
+      const url = isLogin
+        ? `http://localhost:8000/login?nombre_usuario=${formData.username}&contrasena=${formData.password}`
+        : `http://localhost:8000/register?nombre_usuario=${formData.username}&contrasena=${formData.password}`;
+
+      const response = await fetch(url, {
+        method: 'POST'
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.detail || 'Error en la solicitud');
+      }
+
+      if (isLogin) {
+        // 🔐 Guardar token
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('rol', data.rol);
+
+        console.log('Login exitoso:', data);
+
+        // 🔁 Redirección
+        window.location.href = '/dashboard';
+      } else {
+        console.log('Registro exitoso:', data);
+
+        // Cambiar a login
+        setIsLogin(true);
+      }
+
+    } catch (err) {
+      setError(err.message);
     }
-    console.log("Datos enviados:", formData);
   };
 
   return (
     <div className="min-h-screen bg-slate-100 flex items-center justify-center p-6">
       <div className="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-sm border border-slate-50">
-        
+
         {/* Encabezado con Icono */}
         <div className="flex flex-col items-center mb-6">
           <div className="bg-blue-600 p-2.5 rounded-xl mb-3 shadow-lg shadow-blue-100">
@@ -53,10 +91,10 @@ const Login = () => {
                 <label className="block text-[10px] font-bold text-slate-600 mb-1 ml-1 uppercase">Nombre Completo</label>
                 <div className="relative">
                   <CreditCard className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
-                  <input 
+                  <input
                     type="text" required placeholder="Juan Pérez"
                     className="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-xl outline-none bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all"
-                    onChange={(e) => setFormData({...formData, nombreCompleto: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, nombreCompleto: e.target.value })}
                   />
                 </div>
               </div>
@@ -64,10 +102,10 @@ const Login = () => {
                 <label className="block text-[10px] font-bold text-slate-600 mb-1 ml-1 uppercase">Correo Electrónico</label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
-                  <input 
+                  <input
                     type="email" required placeholder="correo@ejemplo.com"
                     className="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-xl outline-none bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all"
-                    onChange={(e) => setFormData({...formData, email: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   />
                 </div>
               </div>
@@ -79,10 +117,10 @@ const Login = () => {
             <label className="block text-[10px] font-bold text-slate-600 mb-1 ml-1 uppercase">Usuario</label>
             <div className="relative">
               <User className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
-              <input 
+              <input
                 type="text" required placeholder="Tu usuario"
                 className="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-xl outline-none bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all"
-                onChange={(e) => setFormData({...formData, username: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, username: e.target.value })}
               />
             </div>
           </div>
@@ -91,10 +129,10 @@ const Login = () => {
             <label className="block text-[10px] font-bold text-slate-600 mb-1 ml-1 uppercase">Contraseña</label>
             <div className="relative">
               <Lock className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
-              <input 
+              <input
                 type="password" required placeholder="••••••••"
                 className="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-xl outline-none bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all"
-                onChange={(e) => setFormData({...formData, password: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               />
             </div>
           </div>
@@ -104,10 +142,10 @@ const Login = () => {
               <label className="block text-[10px] font-bold text-slate-600 mb-1 ml-1 uppercase">Confirmar Contraseña</label>
               <div className="relative">
                 <Lock className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
-                <input 
+                <input
                   type="password" required placeholder="••••••••"
                   className="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-xl outline-none bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all"
-                  onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                 />
               </div>
             </div>
@@ -119,7 +157,7 @@ const Login = () => {
         </form>
 
         <div className="mt-8 pt-4 border-t border-slate-100 text-center">
-          <button 
+          <button
             onClick={() => setIsLogin(!isLogin)}
             className="text-xs text-slate-500 hover:text-blue-600 transition-colors font-medium"
           >

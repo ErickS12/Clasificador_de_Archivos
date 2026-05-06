@@ -7,6 +7,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import UserDashboard from "./pages/UserDashboard";
 import GeneradorAPA from "./pages/GeneradorAPA";
 import TemaDetalle from "./pages/TemaDetalle";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
   return (
@@ -16,17 +17,46 @@ function App() {
         {/* Login */}
         <Route path="/" element={<Login />} />
 
-        {/* Admin */}
-        <Route path="/admin" element={<AdminDashboard />} />
+        {/* Admin (solo admin) */}
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute role="admin">
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
 
         {/* Usuario */}
-        <Route path="/dashboard" element={<UserDashboard />} />
-        <Route path="/generador-apa" element={<GeneradorAPA />} />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute role="usuario">
+              <UserDashboard />
+            </ProtectedRoute>
+          }
+        />
 
-        {/* Temáticas dinámicas */}
-        <Route path="/tema/:nombre" element={<TemaDetalle />} />
+        <Route
+          path="/generador-apa"
+          element={
+            <ProtectedRoute role="usuario">
+              <GeneradorAPA />
+            </ProtectedRoute>
+          }
+        />
 
-        {/* Redirección por defecto */}
+        {/* Temas */}
+        <Route
+          path="/tema/:nombre"
+          element={
+            <ProtectedRoute role="usuario">
+              <TemaDetalle />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Redirección */}
         <Route path="*" element={<Navigate to="/" />} />
 
       </Routes>

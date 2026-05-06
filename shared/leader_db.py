@@ -8,12 +8,14 @@ Funciones de Supabase para leer y escribir el líder activo del clúster.
 import os
 from dotenv import load_dotenv
 from supabase import create_client, Client
+from pathlib import Path
 
 # Cargar variables de entorno del archivo .env
 load_dotenv()
 
 SUPABASE_URL: str = os.getenv("SUPABASE_URL", "")
 SUPABASE_KEY: str = os.getenv("SUPABASE_KEY", "")
+
 
 db: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 

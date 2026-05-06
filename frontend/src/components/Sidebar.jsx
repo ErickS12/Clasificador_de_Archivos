@@ -1,7 +1,20 @@
 import React from 'react';
 import { LayoutDashboard, Users, LogOut } from 'lucide-react';
+import { NavLink, useNavigate } from "react-router-dom";
 
 const Sidebar = () => {
+
+  
+     const navigate = useNavigate();
+  
+    const handleLogout = () => {
+      // limpiar sesión
+      localStorage.clear(); // elimina token, rol, etc.
+  
+      // redirigir sin recargar la app
+      navigate("/", { replace: true });
+    };
+
   return (
     <aside className="w-64 bg-[#0f172a] text-slate-300 flex flex-col min-h-screen">
       {/* Logo y Nombre del Sistema */}
@@ -32,7 +45,7 @@ const Sidebar = () => {
             <p className="text-[10px] text-slate-400 truncate">admin@sistema.com</p>
           </div>
         </div>
-        <button className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-800 rounded-xl text-sm transition-colors text-slate-400 hover:text-white">
+        <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-800 rounded-xl text-sm transition-colors text-slate-400 hover:text-white">
           <LogOut className="w-5 h-5" />
           Cerrar Sesión
         </button>
