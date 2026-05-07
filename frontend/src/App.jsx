@@ -31,7 +31,7 @@ function App() {
         <Route
           path="/dashboard"
           element={
-            <ProtectedRoute role="usuario">
+            <ProtectedRoute role="user">
               <UserDashboard />
             </ProtectedRoute>
           }
@@ -40,7 +40,7 @@ function App() {
         <Route
           path="/generador-apa"
           element={
-            <ProtectedRoute role="usuario">
+            <ProtectedRoute role="user">
               <GeneradorAPA />
             </ProtectedRoute>
           }
@@ -50,7 +50,7 @@ function App() {
         <Route
           path="/tema/:nombre"
           element={
-            <ProtectedRoute role="usuario">
+            <ProtectedRoute role="user">
               <TemaDetalle />
             </ProtectedRoute>
           }

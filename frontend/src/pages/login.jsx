@@ -12,7 +12,8 @@ const Login = () => {
   });
   const [error, setError] = useState('');
 
-  //Conexión con el backend
+  //conexion backend
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -39,19 +40,24 @@ const Login = () => {
         throw new Error(data.detail || 'Error en la solicitud');
       }
 
+      // 🔐 LOGIN
       if (isLogin) {
-        // 🔐 Guardar token
         localStorage.setItem('token', data.token);
         localStorage.setItem('rol', data.rol);
 
         console.log('Login exitoso:', data);
 
-        // 🔁 Redirección
-        window.location.href = '/dashboard';
+        // 🔥 Redirección por rol
+        if (data.rol === 'admin') {
+          window.location.href = '/admin';
+        } else {
+          window.location.href = '/dashboard';
+        }
       } else {
+        // 🆕 REGISTRO
         console.log('Registro exitoso:', data);
 
-        // Cambiar a login
+        // cambiar a login automáticamente
         setIsLogin(true);
       }
 

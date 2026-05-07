@@ -163,8 +163,8 @@ def _obtener_documento_activo(
     return res.data[0]
 
 
-def usuario_actual(autorizacion: str = Header(...)) -> tuple[str, dict[str, Any]]:
-    token = _parse_bearer(autorizacion)
+def usuario_actual(authorization: str = Header(...)) -> tuple[str, dict[str, Any]]:
+    token = _parse_bearer(authorization)
     sesion = obtener_token(token)
 
     if not sesion:
@@ -172,11 +172,13 @@ def usuario_actual(autorizacion: str = Header(...)) -> tuple[str, dict[str, Any]
 
     expira_en = _parse_iso_fecha(sesion.get("expira_en"))
     ahora = datetime.now(timezone.utc)
+
     if expira_en and expira_en <= ahora:
         revocar_token(token)
         raise HTTPException(401, "Token expirado.")
 
     usuario = obtener_usuario_por_id(sesion["usuario_id"])
+
     if not usuario or not usuario.get("activo", True):
         raise HTTPException(401, "Usuario inactivo o inexistente.")
 
@@ -190,7 +192,6 @@ def usuario_actual(autorizacion: str = Header(...)) -> tuple[str, dict[str, Any]
         "areas": catalogo["areas"],
         "token": token,
     }
-
 
 def obtener_admin(auth: tuple = Depends(usuario_actual)) -> tuple[str, dict[str, Any]]:
     nombre_usuario, datos = auth
@@ -777,3 +778,29 @@ def admin_eliminar_subarea(
 
     db.table("subtematicas").delete().eq("id", sub["id"]).execute()
     return {"mensaje": f"Subarea '{subarea}' eliminada. Documentos movidos a '{area}'."}
+
+@router.put("/admin/users/{nombre_usuario}/estado", tags=["admin"])
+def admin_cambiar_estado_usuario(
+    nombre_usuario: str,
+    activo: bool,
+    auth: tuple = Depends(obtener_admin),
+):
+    admin_user, _ = auth
+
+    if nombre_usuario == admin_user:
+        raise HTTPException(400, "No puedes desactivar tu propia cuenta.")
+
+    usuario = obtener_usuario_por_nombre(nombre_usuario)
+
+    if not usuario:
+        raise HTTPException(404, "Usuario no encontrado.")
+
+    db.table("usuarios").update({
+        "activo": activo
+    }).eq("id", usuario["id"]).execute()
+
+    estado = "activado" if activo else "desactivado"
+
+    return {
+        "mensaje": f"Usuario {estado} correctamente."
+    }
