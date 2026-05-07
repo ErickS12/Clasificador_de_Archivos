@@ -122,16 +122,27 @@ def revocar_token(token_hash: str) -> bool:
 # ── TEMATICAS ────────────────────────────────────────────────────────────────
 
 
-def obtener_tematicas_usuario(usuario_id: str) -> List[Dict[str, Any]]:
+#def obtener_tematicas_usuario(usuario_id: str) -> List[Dict[str, Any]]:
     """Obtener todas las tematicas de un usuario (nivel 1)."""
+    # try:
+    #     response = db.table("tematicas").select("*").eq("usuario_id", usuario_id).execute()
+    #    return response.data if response.data else []
+    #except Exception as e:
+    #   print(f"Error obteniendo tematicas: {e}")
+    #  return []
+
+#Cambio para obtener tematicas generales y del usuario
+def obtener_tematicas_usuario(usuario_id: str):
+    """Obtener todas las tematicas de un usuario (nivel 1) y las tematicas generales."""
     try:
-        response = db.table("tematicas").select("*").eq("usuario_id", usuario_id).execute()
+        response = db.table("tematicas").select("*").execute()
         return response.data if response.data else []
     except Exception as e:
         print(f"Error obteniendo tematicas: {e}")
         return []
 
 
+#Esta pero no lo usamos, porque no se necesita obtener solo las tematicas generales, pero la dejo por si acaso
 def insertar_tematica(usuario_id: str, nombre: str, es_general: bool = False) -> Optional[str]:
     """Crear nueva tematica. Retorna UUID de la tematica."""
     try:
@@ -149,15 +160,28 @@ def insertar_tematica(usuario_id: str, nombre: str, es_general: bool = False) ->
 # ── SUBTEMATICAS ────────────────────────────────────────────────────────────
 
 
+#def obtener_subtematicas(tematica_id: str) -> List[Dict[str, Any]]:
+#   """Obtener todas las subtematicas de una tematica."""
+#    try:
+#       response = db.table("subtematicas").select("*").eq("tematica_id", tematica_id).execute()
+#       return response.data if response.data else []
+#   except Exception as e:
+#       print(f"Error obteniendo subtematicas: {e}")
+#       return []
+
 def obtener_subtematicas(tematica_id: str) -> List[Dict[str, Any]]:
     """Obtener todas las subtematicas de una tematica."""
     try:
-        response = db.table("subtematicas").select("*").eq("tematica_id", tematica_id).execute()
+        response = db.table("subtematicas")\
+            .select("*")\
+            .eq("tematica_id", tematica_id)\
+            .execute()
+
         return response.data if response.data else []
+
     except Exception as e:
         print(f"Error obteniendo subtematicas: {e}")
         return []
-
 
 def insertar_subtematica(tematica_id: str, nombre: str) -> Optional[str]:
     """Crear nueva subtematica. Retorna UUID de la subtematica."""
