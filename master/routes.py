@@ -259,31 +259,28 @@ def obtener_categorias(auth: tuple = Depends(usuario_actual)):
     _, datos = auth
     return {"areas": datos["areas"]}
 
-
-@router.post("/areas", tags=["areas"])
-def crear_area(area: str, auth: tuple = Depends(usuario_actual)):
+@router.post("/areas/{area}/sub", tags=["areas"])
+def crear_subarea(area: str, subarea: str, auth: tuple = Depends(usuario_actual)):
     _, datos = auth
 
     if area == "General":
-        raise HTTPException(400, "'General' es un area reservada del sistema.")
+        raise HTTPException(
+            400,
+            "El area 'General' no puede tener subareas."
+        )
 
-    tematica_existente = (
-        db.table("tematicas")
+    tematica, _ = _resolver_ids_area(datos["id"], area)
+
+    sub_existente = (
+        db.table("subtematicas")
         .select("id")
-        .eq("usuario_id", datos["id"])
-        .eq("nombre", area)
+        .eq("tematica_id", tematica["id"])
+        .eq("nombre", subarea)
         .limit(1)
         .execute()
     )
-    if tematica_existente.data:
-        raise HTTPException(400, f"El area '{area}' ya existe.")
 
-    nueva_tematica = insertar_tematica(datos["id"], area, es_general=False)
-    if not nueva_tematica:
-        raise HTTPException(500, "No se pudo crear el area.")
-
-    return {"mensaje": f"Area '{area}' creada."}
-
+    ...
 
 @router.post("/areas/{area}/sub", tags=["areas"])
 def crear_subarea(area: str, subarea: str, auth: tuple = Depends(usuario_actual)):
@@ -436,7 +433,16 @@ async def cargar_archivo(archivo: UploadFile = File(...), auth: tuple = Depends(
                 }
             ).eq("id", documento_id).execute()
 
-        return adaptar_respuesta_carga(archivo.filename, area, subarea, nodos_almacenados, votos)
+        #return adaptar_respuesta_carga(archivo.filename, area, subarea, nodos_almacenados, votos),
+        
+        return {
+                "id": documento_id,
+                "area": area,
+                "subarea": subarea,
+                "nodos": nodos_almacenados,
+                "votos": votos
+            }
+    
     finally:
         if os.path.exists(ruta_temporal):
             os.remove(ruta_temporal)
@@ -468,11 +474,18 @@ def obtener_archivos(auth: tuple = Depends(usuario_actual)):
 
         arbol.setdefault(area_nombre, {"files": []})
 
+        documento_info = {
+            "id": doc["id"],
+            "nombre": doc["nombre_archivo"],
+            "fecha": doc.get("subido_en"),
+            "area": area_nombre,
+            "subarea": sub_nombre if sub_nombre else None,
+        }
         if sub_nombre:
             arbol[area_nombre].setdefault(sub_nombre, {"files": []})
-            arbol[area_nombre][sub_nombre]["files"].append(doc["nombre_archivo"])
+            arbol[area_nombre][sub_nombre]["files"].append(documento_info)
         else:
-            arbol[area_nombre]["files"].append(doc["nombre_archivo"])
+            arbol[area_nombre]["files"].append(documento_info)
 
     return adaptar_respuesta_archivos(nombre_usuario, arbol)
 
@@ -484,6 +497,7 @@ def descargar_archivo(
     subarea: Optional[str] = Query(None),
     auth: tuple = Depends(usuario_actual),
 ):
+    subarea = subarea or None
     nombre_usuario, datos = auth
     tematica, subtematica = _resolver_ids_area(datos["id"], area, subarea)
 

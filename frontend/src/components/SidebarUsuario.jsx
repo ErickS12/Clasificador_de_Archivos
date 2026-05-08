@@ -63,7 +63,7 @@ const SidebarUsuario = () => {
 
     navigate("/", { replace: true });
   };
-
+  const username = localStorage.getItem("username") || "Usuario";
   return (
 
     <aside className="w-64 min-w-[260px] bg-[#0f172a] text-slate-300 flex flex-col min-h-screen sticky top-0 flex-shrink-0 border-r border-slate-800">
@@ -97,10 +97,9 @@ const SidebarUsuario = () => {
             to="/dashboard"
             end
             className={({ isActive }) =>
-              `w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-all ${
-                isActive
-                  ? "bg-blue-600 text-white font-bold shadow-lg shadow-blue-900/20"
-                  : "text-slate-400 hover:bg-slate-800/50 hover:text-white"
+              `w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-all ${isActive
+                ? "bg-blue-600 text-white font-bold shadow-lg shadow-blue-900/20"
+                : "text-slate-400 hover:bg-slate-800/50 hover:text-white"
               }`
             }
           >
@@ -111,10 +110,9 @@ const SidebarUsuario = () => {
           <NavLink
             to="/generador-apa"
             className={({ isActive }) =>
-              `w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-all ${
-                isActive
-                  ? "bg-blue-600 text-white font-bold shadow-lg shadow-blue-900/20"
-                  : "text-slate-400 hover:bg-slate-800/50 hover:text-white"
+              `w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-all ${isActive
+                ? "bg-blue-600 text-white font-bold shadow-lg shadow-blue-900/20"
+                : "text-slate-400 hover:bg-slate-800/50 hover:text-white"
               }`
             }
           >
@@ -147,10 +145,9 @@ const SidebarUsuario = () => {
                   key={index}
                   to={`/tema/${tema.toLowerCase().replace(/\s+/g, "-")}`}
                   className={({ isActive }) =>
-                    `w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-[13px] transition-all ${
-                      isActive
-                        ? "bg-blue-600 text-white"
-                        : "text-slate-400 hover:bg-slate-800/50 hover:text-white"
+                    `w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-[13px] transition-all ${isActive
+                      ? "bg-blue-600 text-white"
+                      : "text-slate-400 hover:bg-slate-800/50 hover:text-white"
                     }`
                   }
                 >
@@ -177,18 +174,24 @@ const SidebarUsuario = () => {
 
         <div className="flex items-center gap-3 px-2 py-3 bg-slate-800/30 rounded-2xl mb-2">
 
-          <div className="w-9 h-9 bg-blue-500 rounded-xl flex items-center justify-center text-white text-xs font-black">
-            UD
+          <div className="w-9 h-9 rounded-xl overflow-hidden ring-1 ring-slate-700">
+
+            <img
+              src={`https://ui-avatars.com/api/?name=${username}&bg=2563eb&color=fff`}
+              alt="perfil"
+              className="w-full h-full object-cover"
+            />
+
           </div>
 
           <div className="overflow-hidden text-left">
 
-            <p className="text-xs font-bold text-white truncate">
-              Usuario Demo
+            <p className="text-xs font-bold text-white truncate uppercase">
+              {username}
             </p>
 
             <p className="text-[10px] text-slate-500 truncate">
-              usuario@demo.com
+              En línea
             </p>
 
           </div>

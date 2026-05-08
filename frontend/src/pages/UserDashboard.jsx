@@ -13,7 +13,6 @@ const UserDashboard = () => {
 
 
   //Concetamos con el backend para obtener los documentos del usuario
-  //Concetamos con el backend para obtener los documentos del usuario
   useEffect(() => {
 
     const obtenerArchivos = async () => {
@@ -33,55 +32,42 @@ const UserDashboard = () => {
 
         const data = await response.json();
 
-        console.log(data);
-
         if (!response.ok) {
           throw new Error(data.detail || "Error obteniendo archivos");
         }
 
-        // Convertir árbol a array plano
-        const docs = [];
+        const estructura = data.clasificacion || {};
 
-        // Compatibilidad con backend y con la respuesta actual del servidor
-        const estructura = data.clasificacion || data.archivos || data.areas || {};
+        const docs = [];
 
         Object.entries(estructura).forEach(([area, contenido]) => {
 
-          // Archivos directos del área
-          if (contenido.files) {
-
-            contenido.files.forEach((archivo, index) => {
-
-              docs.push({
-                id: `${area}-${index}`,
-                name: archivo,
-                tematica: area,
-                subarea: null
-              });
-
+          // archivos directos del área
+          (contenido.files || []).forEach((archivo) => {
+            docs.push({
+              id: archivo.id,
+              name: archivo.nombre,
+              tematica: area,
+              subarea: archivo.subarea || null,
+              fecha: archivo.fecha
             });
+          });
 
-          }
+          // subáreas
+          Object.entries(contenido).forEach(([key, value]) => {
 
-          // Subáreas
-          Object.entries(contenido).forEach(([subarea, subcontenido]) => {
+            if (key === "files") return;
+            if (!value?.files) return;
 
-            if (subarea === "files") return;
-
-            if (subcontenido.files) {
-
-              subcontenido.files.forEach((archivo, index) => {
-
-                docs.push({
-                  id: `${area}-${subarea}-${index}`,
-                  name: archivo,
-                  tematica: area,
-                  subarea: subarea
-                });
-
+            value.files.forEach((archivo) => {
+              docs.push({
+                id: archivo.id,
+                name: archivo.nombre,
+                tematica: area,
+                subarea: key,
+                fecha: archivo.fecha
               });
-
-            }
+            });
 
           });
 
@@ -109,7 +95,6 @@ const UserDashboard = () => {
   const subirArchivo = async (e) => {
 
     const file = e.target.files[0];
-
     if (!file) return;
 
     try {
@@ -119,7 +104,6 @@ const UserDashboard = () => {
       const token = localStorage.getItem("token");
 
       const formData = new FormData();
-
       formData.append("archivo", file);
 
       const response = await fetch(
@@ -141,14 +125,15 @@ const UserDashboard = () => {
 
       alert("Archivo subido correctamente");
 
-      // Agregar inmediatamente a tabla
+      // 🔥 YA NO se inventa ID
       setDocumentos(prev => [
         ...prev,
         {
-          id: Date.now(),
+          id: data.id,
           name: file.name,
           tematica: data.area,
-          subarea: data.subarea || null
+          subarea: data.subarea || null,
+          fecha: new Date().toISOString()
         }
       ]);
 
@@ -164,7 +149,98 @@ const UserDashboard = () => {
 
   };
 
-  
+  const verDocumento = async (doc) => {
+    try {
+      const token = localStorage.getItem("token");
+      const params = new URLSearchParams();
+
+      params.append("nombre_archivo", doc.name);
+      params.append("area", doc.tematica);
+      if (doc.subarea) {
+        params.append("subarea", doc.subarea);
+      }
+
+      const response = await fetch(`http://localhost:8000/download?${params.toString()}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.detail || "Error al obtener el documento");
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      window.open(url, "_blank");
+      setTimeout(() => window.URL.revokeObjectURL(url), 60000);
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  //Función Descargar Documento: Similar a verDocumento pero con un endpoint de descarga directa
+  const descargarDocumento = async (doc) => {
+    try {
+      const token = localStorage.getItem("token");
+      const params = new URLSearchParams();
+
+      params.append("nombre_archivo", doc.name);
+      params.append("area", doc.tematica);
+      if (doc.subarea) {
+        params.append("subarea", doc.subarea);
+      }
+
+      const response = await fetch(`http://localhost:8000/download?${params.toString()}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.detail || "Error al descargar el documento");
+      }
+
+      const blob = await response.blob();
+      const link = document.createElement("a");
+      link.href = window.URL.createObjectURL(blob);
+      link.download = doc.name;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => window.URL.revokeObjectURL(link.href), 60000);
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  //Función Eliminar Documento: Envía una solicitud DELETE al backend para eliminar el documento y luego actualiza el estado local
+  const eliminarDocumento = async (doc) => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(
+        `http://localhost:8000/document?nombre_archivo=${encodeURIComponent(doc.name)}&area=${encodeURIComponent(doc.tematica)}&subarea=${encodeURIComponent(doc.subarea || "")}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.detail || "Error al eliminar archivo");
+      }
+      //Quitar el documento eliminado del estado local
+      setDocumentos(prev => prev.filter(d => d.id !== doc.id));
+      alert("Archivo eliminado correctamente");
+    } catch (err) {
+      alert(err.message);
+    }
+
+  };
 
   return (
     <div className="flex min-h-screen bg-slate-50">
@@ -307,17 +383,33 @@ const UserDashboard = () => {
                         </span>
                       </td>
 
-                      <td className="px-6 py-4 text-slate-400 text-xs">{doc.fecha || "-"}</td>
+                      <td className="px-6 py-4 text-slate-400 text-xs">
+                        {doc.fecha
+                          ? new Date(doc.fecha).toLocaleDateString()
+                          : "-"}
+                      </td>
 
                       <td className="px-6 py-4">
                         <div className="flex justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button className="p-2 hover:bg-white rounded-lg text-blue-500">
+                          <button
+                            type="button"
+                            onClick={() => verDocumento(doc)}
+                            className="p-2 hover:bg-white rounded-lg text-blue-500"
+                          >
                             <Eye className="w-4 h-4" />
                           </button>
-                          <button className="p-2 hover:bg-white rounded-lg text-slate-500">
+                          <button
+                            type="button"
+                            onClick={() => descargarDocumento(doc)}
+                            className="p-2 hover:bg-white rounded-lg text-slate-500"
+                          >
                             <FileDown className="w-4 h-4" />
                           </button>
-                          <button className="p-2 hover:bg-white rounded-lg text-red-500">
+                          <button
+                            type="button"
+                            onClick={() => eliminarDocumento(doc)}
+                            className="p-2 hover:bg-white rounded-lg text-red-500"
+                          >
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
