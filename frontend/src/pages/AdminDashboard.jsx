@@ -263,179 +263,346 @@ const AdminDashboard = () => {
   );
 
   return (
-    <div className="flex min-h-screen bg-slate-50 min-w-0">
-      <Sidebar />
+    <>
+      <div className="flex min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 overflow-hidden">
 
-      <div className="flex-1 flex flex-col min-w-0">
-        <Navbar title="Administración" user="Admin" />
+        {/* SIDEBAR */}
+        <Sidebar />
 
-        <main className="p-8">
+        {/* CONTENT */}
+        <div className="flex-1 flex flex-col min-w-0">
 
-          {/* Encabezado */}
-          <div className="flex justify-between items-end mb-8 text-left">
-            <div>
-              <h1 className="text-2xl font-bold text-slate-800 tracking-tight">
-                Administración de Usuarios
-              </h1>
-              <p className="text-slate-500 text-sm mt-1">
-                Gestiona los usuarios del sistema
-              </p>
-            </div>
+          <Navbar title="Administración" user="Admin" />
 
-            <button
-              onClick={() => setCrearModal(true)}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 text-sm font-bold shadow-lg shadow-blue-200 transition-all active:scale-95"
-            >
-              <Plus className="w-4 h-4" />
-              Crear Usuario
-            </button>
-          </div>
+          <main className="p-8 relative">
 
-          {/* Loading y Error */}
-          {loading && <p className="mb-4">Cargando usuarios...</p>}
-          {error && <p className="mb-4 text-red-500">{error}</p>}
+            {/* Glow Effects */}
+            <div className="absolute top-0 right-0 w-96 h-96 bg-blue-200/40 blur-3xl rounded-full"></div>
+            <div className="absolute bottom-0 left-0 w-96 h-96 bg-cyan-100/40 blur-3xl rounded-full"></div>
 
-          {/* Estadísticas dinámicas */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 text-left">
-            <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex items-center justify-between">
+            {/* HEADER */}
+            <div className="relative flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-10">
+
               <div>
-                <p className="text-slate-500 text-xs font-bold uppercase">Total Usuarios</p>
-                <h3 className="text-3xl font-bold text-slate-800 mt-1">
-                  {usuarios.length}
-                </h3>
+
+                <p className="text-cyan-600 uppercase tracking-[0.25em] text-xs font-bold mb-2">
+                  Panel Administrativo
+                </p>
+
+                <h1 className="text-4xl font-bold tracking-tight text-slate-800">
+                  Administración de Usuarios
+                </h1>
+
+                <p className="text-slate-500 mt-3">
+                  Gestiona los usuarios y permisos del sistema.
+                </p>
               </div>
-              <div className="bg-blue-50 p-3 rounded-2xl text-blue-600">
-                <Users className="w-6 h-6" />
+
+              <button
+                onClick={() => setCrearModal(true)}
+                className="bg-gradient-to-r from-blue-600 to-cyan-500 hover:scale-[1.02] active:scale-[0.98] transition-all text-white px-6 py-3 rounded-2xl flex items-center gap-3 font-semibold shadow-2xl shadow-cyan-200"
+              >
+
+                <Plus className="w-5 h-5" />
+
+                Crear Usuario
+              </button>
+            </div>
+
+            {/* Loading y Error */}
+            {loading && (
+              <div className="mb-6 bg-white/80 border border-slate-200 rounded-2xl px-5 py-4 shadow-sm backdrop-blur-xl text-slate-600">
+                Cargando usuarios...
+              </div>
+            )}
+
+            {error && (
+              <div className="mb-6 bg-red-50 border border-red-100 text-red-500 rounded-2xl px-5 py-4 shadow-sm">
+                {error}
+              </div>
+            )}
+
+            {/* STATS */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+
+              {/* TOTAL */}
+              <div className="bg-white/80 backdrop-blur-2xl border border-slate-200 rounded-3xl p-6 relative overflow-hidden shadow-sm hover:shadow-xl transition-all">
+
+                <div className="absolute top-0 right-0 w-40 h-40 bg-blue-100 blur-3xl rounded-full"></div>
+
+                <div className="relative flex items-center justify-between">
+
+                  <div>
+
+                    <p className="text-slate-500 text-xs uppercase tracking-widest font-bold">
+                      Total Usuarios
+                    </p>
+
+                    <h3 className="text-5xl font-bold mt-3 text-slate-800">
+                      {usuarios.length}
+                    </h3>
+                  </div>
+
+                  <div className="w-16 h-16 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600">
+
+                    <Users className="w-8 h-8" />
+
+                  </div>
+                </div>
+              </div>
+
+              {/* ACTIVOS */}
+              <div className="bg-white/80 backdrop-blur-2xl border border-slate-200 rounded-3xl p-6 relative overflow-hidden shadow-sm hover:shadow-xl transition-all">
+
+                <div className="absolute top-0 right-0 w-40 h-40 bg-emerald-100 blur-3xl rounded-full"></div>
+
+                <div className="relative flex items-center justify-between">
+
+                  <div>
+
+                    <p className="text-slate-500 text-xs uppercase tracking-widest font-bold">
+                      Usuarios Activos
+                    </p>
+
+                    <h3 className="text-5xl font-bold mt-3 text-slate-800">
+                      {usuarios.filter(u => u.estado === "Activo").length}
+                    </h3>
+                  </div>
+
+                  <div className="w-16 h-16 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600">
+
+                    <UserCheck className="w-8 h-8" />
+
+                  </div>
+                </div>
+              </div>
+
+              {/* ADMINS */}
+              <div className="bg-white/80 backdrop-blur-2xl border border-slate-200 rounded-3xl p-6 relative overflow-hidden shadow-sm hover:shadow-xl transition-all">
+
+                <div className="absolute top-0 right-0 w-40 h-40 bg-purple-100 blur-3xl rounded-full"></div>
+
+                <div className="relative flex items-center justify-between">
+
+                  <div>
+
+                    <p className="text-slate-500 text-xs uppercase tracking-widest font-bold">
+                      Administradores
+                    </p>
+
+                    <h3 className="text-5xl font-bold mt-3 text-slate-800">
+                      {usuarios.filter(u => u.rol === "Administrador").length}
+                    </h3>
+                  </div>
+
+                  <div className="w-16 h-16 rounded-2xl bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-600">
+
+                    <ShieldCheck className="w-8 h-8" />
+
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex items-center justify-between">
-              <div>
-                <p className="text-slate-500 text-xs font-bold uppercase">Usuarios Activos</p>
-                <h3 className="text-3xl font-bold text-slate-800 mt-1">
-                  {usuarios.filter(u => u.estado === "Activo").length}
-                </h3>
+            {/* TABLE */}
+            <div className="bg-white/80 backdrop-blur-2xl border border-slate-200 rounded-[32px] overflow-hidden shadow-sm">
+
+              {/* SEARCH */}
+              <div className="p-6 border-b border-slate-100 bg-white/50">
+
+                <div className="relative max-w-md">
+
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+
+                  <input
+                    type="text"
+                    placeholder="Buscar usuarios..."
+                    value={busqueda}
+                    onChange={(e) => setBusqueda(e.target.value)}
+                    className="w-full bg-white border border-slate-200 text-slate-700 placeholder:text-slate-400 rounded-2xl py-3 pl-11 pr-4 outline-none focus:ring-2 focus:ring-cyan-400 transition-all"
+                  />
+                </div>
               </div>
-              <div className="bg-green-50 p-3 rounded-2xl text-green-600">
-                <UserCheck className="w-6 h-6" />
-              </div>
-            </div>
 
-            <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex items-center justify-between">
-              <div>
-                <p className="text-slate-500 text-xs font-bold uppercase">Administradores</p>
-                <h3 className="text-3xl font-bold text-slate-800 mt-1">
-                  {usuarios.filter(u => u.rol === "Administrador").length}
-                </h3>
-              </div>
-              <div className="bg-purple-50 p-3 rounded-2xl text-purple-600">
-                <ShieldCheck className="w-6 h-6" />
-              </div>
-            </div>
-          </div>
+              {/* TABLE */}
+              <div className="overflow-x-auto">
 
-          {/* Tabla */}
-          <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+                <table className="w-full text-sm">
 
-            {/* Buscador */}
-            <div className="p-4 border-b border-slate-100 bg-slate-50/50">
-              <div className="relative max-w-md">
-                <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
-                <input
-                  type="text"
-                  placeholder="Buscar usuarios..."
-                  value={busqueda}
-                  onChange={(e) => setBusqueda(e.target.value)}
-                  className="w-full bg-white border border-slate-200 pl-10 pr-4 py-2 rounded-xl text-xs outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-            </div>
+                  <thead className="border-b border-slate-100 bg-slate-50/80">
 
-            <div className="overflow-x-auto text-left">
-              <table className="w-full text-sm">
-                <thead className="bg-slate-50 text-slate-500 font-bold uppercase text-[10px] border-b">
-                  <tr>
-                    <th className="px-6 py-4">Usuario</th>
-                    <th className="px-6 py-4">Correo</th>
-                    <th className="px-6 py-4">Rol</th>
-                    <th className="px-6 py-4">Estado</th>
-                    <th className="px-6 py-4 text-center">Acciones</th>
-                  </tr>
-                </thead>
+                    <tr className="text-slate-500 uppercase text-[11px] tracking-widest">
 
-                <tbody>
-                  {usuariosFiltrados.map((u) => (
-                    <tr key={u.id} className="hover:bg-blue-50">
-                      <td className="px-6 py-4 flex items-center gap-3">
-                        <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-bold text-xs">
-                          {u.user[0]}
-                        </div>
-                        <span className="font-semibold text-slate-700">
-                          {u.user}
-                        </span>
-                      </td>
+                      <th className="px-8 py-5 text-left">
+                        Usuario
+                      </th>
 
-                      <td className="px-6 py-4 text-slate-500">
-                        {u.email}
-                      </td>
+                      <th className="px-8 py-5 text-left">
+                        Correo
+                      </th>
 
-                      <td className="px-6 py-4">
-                        <span className={`px-2 py-1 rounded text-xs font-bold ${u.rol === 'Administrador'
-                          ? 'bg-purple-100 text-purple-600'
-                          : 'bg-blue-100 text-blue-600'
-                          }`}>
-                          {u.rol}
-                        </span>
-                      </td>
+                      <th className="px-8 py-5 text-left">
+                        Rol
+                      </th>
 
-                      <td className="px-6 py-4">
-                        <span className="px-2 py-1 bg-green-100 text-green-600 rounded text-xs font-bold">
-                          {u.estado}
-                        </span>
-                      </td>
+                      <th className="px-8 py-5 text-left">
+                        Estado
+                      </th>
 
-                      <td className="px-6 py-4 text-center">
-                        <div className="flex justify-center gap-2">
-                          <button
-                            onClick={() => {
-                              setUsuarioSeleccionado(u);
-                              setModalVisible(true);
-                            }}
-                          >
-                            <Eye className="w-4 h-4 text-blue-500" />
-                          </button>
-                          <button onClick={() => abrirEditar(u)}>
-                            <Edit className="w-4 h-4 text-amber-500" />
-                          </button>
-                          <button onClick={() => cambiarEstado(u)}>
-                            <Lock className="w-4 h-4 text-gray-400" />
-                          </button>
-                          <button onClick={() => eliminarUsuario(u.user)}>
-                            <Trash2 className="w-4 h-4 text-red-500" />
-                          </button>
-                        </div>
-                      </td>
-
+                      <th className="px-8 py-5 text-center">
+                        Acciones
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
 
-          </div>
-        </main>
+                  <tbody>
+
+                    {usuariosFiltrados.map((u) => (
+
+                      <tr
+                        key={u.id}
+                        className="border-b border-slate-100 hover:bg-cyan-50/40 transition-all"
+                      >
+
+                        {/* USER */}
+                        <td className="px-8 py-5">
+
+                          <div className="flex items-center gap-4">
+
+                            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center font-bold text-white shadow-lg shadow-cyan-200">
+                              {u.user[0]}
+                            </div>
+
+                            <div>
+
+                              <p className="font-semibold text-slate-800">
+                                {u.user}
+                              </p>
+
+                              <p className="text-xs text-slate-400">
+                                ID: {u.id}
+                              </p>
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* EMAIL */}
+                        <td className="px-8 py-5 text-slate-500">
+                          {u.email}
+                        </td>
+
+                        {/* ROLE */}
+                        <td className="px-8 py-5">
+
+                          <span
+                            className={`px-3 py-1 rounded-xl text-xs font-semibold border
+                        ${u.rol === "Administrador"
+                                ? "bg-purple-50 text-purple-600 border-purple-100"
+                                : "bg-blue-50 text-blue-600 border-blue-100"
+                              }`}
+                          >
+                            {u.rol}
+                          </span>
+                        </td>
+
+                        {/* STATUS */}
+                        <td className="px-8 py-5">
+
+                          <span className="px-3 py-1 rounded-xl text-xs font-semibold bg-emerald-50 text-emerald-600 border border-emerald-100">
+                            {u.estado}
+                          </span>
+                        </td>
+
+                        {/* ACTIONS */}
+                        <td className="px-8 py-5">
+
+                          <div className="flex justify-center gap-3">
+
+                            <button
+                              onClick={() => {
+                                setUsuarioSeleccionado(u);
+                                setModalVisible(true);
+                              }}
+                              className="w-10 h-10 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-600 flex items-center justify-center transition-all"
+                            >
+
+                              <Eye className="w-4 h-4" />
+
+                            </button>
+
+                            <button
+                              onClick={() => abrirEditar(u)}
+                              className="w-10 h-10 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-500 flex items-center justify-center transition-all"
+                            >
+
+                              <Edit className="w-4 h-4" />
+
+                            </button>
+
+                            <button
+                              onClick={() => cambiarEstado(u)}
+                              className="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-all"
+                            >
+
+                              <Lock className="w-4 h-4" />
+
+                            </button>
+
+                            <button
+                              onClick={() => eliminarUsuario(u.user)}
+                              className="w-10 h-10 rounded-xl bg-red-50 hover:bg-red-100 text-red-500 flex items-center justify-center transition-all"
+                            >
+
+                              <Trash2 className="w-4 h-4" />
+
+                            </button>
+
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </main>
+        </div>
       </div>
 
+
+
+   
       {crearModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
 
-          <div className="bg-white rounded-3xl p-6 w-[400px] shadow-2xl">
+          <div className="w-full max-w-md bg-white rounded-[32px] border border-slate-200 shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
 
-            <h2 className="text-xl font-bold mb-6">
-              Crear Usuario
-            </h2>
+            {/* Header */}
+            <div className="p-8 border-b border-slate-100 bg-gradient-to-r from-blue-50 to-cyan-50">
 
-            <div className="space-y-4">
+              <div className="flex items-center gap-4">
+
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-cyan-200">
+
+                  <Plus className="w-6 h-6 text-white" />
+
+                </div>
+
+                <div>
+
+                  <h2 className="text-2xl font-bold text-slate-800">
+                    Crear Usuario
+                  </h2>
+
+                  <p className="text-slate-500 text-sm mt-1">
+                    Agrega un nuevo usuario al sistema
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="p-8 space-y-5">
 
               <input
                 type="text"
@@ -447,7 +614,7 @@ const AdminDashboard = () => {
                     nombre_usuario: e.target.value
                   })
                 }
-                className="w-full border border-slate-300 rounded-xl px-4 py-2"
+                className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-cyan-400 transition-all"
               />
 
               <input
@@ -460,7 +627,7 @@ const AdminDashboard = () => {
                     contrasena: e.target.value
                   })
                 }
-                className="w-full border border-slate-300 rounded-xl px-4 py-2"
+                className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-cyan-400 transition-all"
               />
 
               <select
@@ -471,96 +638,157 @@ const AdminDashboard = () => {
                     rol: e.target.value
                   })
                 }
-                className="w-full border border-slate-300 rounded-xl px-4 py-2"
+                className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-cyan-400 transition-all"
               >
                 <option value="user">Usuario</option>
                 <option value="admin">Administrador</option>
               </select>
-
             </div>
 
-            <div className="flex justify-end gap-3 mt-6">
+            {/* Footer */}
+            <div className="flex justify-end gap-3 p-8 pt-0">
 
               <button
                 onClick={() => setCrearModal(false)}
-                className="px-4 py-2 rounded-xl border"
+                className="px-5 py-3 rounded-2xl border border-slate-200 hover:bg-slate-100 text-slate-600 transition-all"
               >
                 Cancelar
               </button>
 
               <button
                 onClick={crearUsuario}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl"
+                className="bg-gradient-to-r from-blue-600 to-cyan-500 hover:scale-[1.02] active:scale-[0.98] transition-all text-white px-6 py-3 rounded-2xl shadow-lg shadow-cyan-200 font-semibold"
               >
                 Crear
               </button>
-
             </div>
-
           </div>
-
         </div>
       )}
 
       {modalVisible && usuarioSeleccionado && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
 
-          <div className="bg-white rounded-3xl p-6 w-[400px] shadow-2xl">
+          <div className="w-full max-w-md bg-white rounded-[32px] border border-slate-200 shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
 
-            <h2 className="text-xl font-bold mb-4">
-              Información del Usuario
-            </h2>
+            {/* Header */}
+            <div className="p-8 border-b border-slate-100 bg-gradient-to-r from-cyan-50 to-blue-50">
 
-            <div className="space-y-3 text-sm">
+              <div className="flex items-center gap-4">
 
-              <div>
-                <span className="font-bold">Usuario:</span>{" "}
-                {usuarioSeleccionado.user}
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-cyan-200">
+
+                  <Eye className="w-6 h-6 text-white" />
+
+                </div>
+
+                <div>
+
+                  <h2 className="text-2xl font-bold text-slate-800">
+                    Información del Usuario
+                  </h2>
+
+                  <p className="text-slate-500 text-sm mt-1">
+                    Información general del usuario
+                  </p>
+                </div>
               </div>
-
-              <div>
-                <span className="font-bold">Correo:</span>{" "}
-                {usuarioSeleccionado.email}
-              </div>
-
-              <div>
-                <span className="font-bold">Rol:</span>{" "}
-                {usuarioSeleccionado.rol}
-              </div>
-
-              <div>
-                <span className="font-bold">Estado:</span>{" "}
-                {usuarioSeleccionado.estado}
-              </div>
-
             </div>
 
-            <div className="flex justify-end mt-6">
+            {/* Content */}
+            <div className="p-8 space-y-5">
+
+              <div className="bg-slate-50 rounded-2xl p-4">
+                <p className="text-xs uppercase text-slate-400 font-bold mb-1">
+                  Usuario
+                </p>
+
+                <p className="font-semibold text-slate-800">
+                  {usuarioSeleccionado.user}
+                </p>
+              </div>
+
+              <div className="bg-slate-50 rounded-2xl p-4">
+                <p className="text-xs uppercase text-slate-400 font-bold mb-1">
+                  Correo
+                </p>
+
+                <p className="font-semibold text-slate-800">
+                  {usuarioSeleccionado.email}
+                </p>
+              </div>
+
+              <div className="bg-slate-50 rounded-2xl p-4">
+                <p className="text-xs uppercase text-slate-400 font-bold mb-1">
+                  Rol
+                </p>
+
+                <p className="font-semibold text-slate-800">
+                  {usuarioSeleccionado.rol}
+                </p>
+              </div>
+
+              <div className="bg-slate-50 rounded-2xl p-4">
+                <p className="text-xs uppercase text-slate-400 font-bold mb-1">
+                  Estado
+                </p>
+
+                <p className="font-semibold text-emerald-600">
+                  {usuarioSeleccionado.estado}
+                </p>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex justify-end p-8 pt-0">
+
               <button
                 onClick={() => setModalVisible(false)}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl"
+                className="bg-gradient-to-r from-blue-600 to-cyan-500 hover:scale-[1.02] active:scale-[0.98] transition-all text-white px-6 py-3 rounded-2xl shadow-lg shadow-cyan-200 font-semibold"
               >
                 Cerrar
               </button>
             </div>
-
           </div>
         </div>
       )}
 
+
       {showEditModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
 
-          <div className="bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl">
+          <div className="w-full max-w-md bg-white rounded-[32px] border border-slate-200 shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
 
-            <h2 className="text-xl font-bold mb-6">
-              Editar Usuario
-            </h2>
+            {/* Header */}
+            <div className="p-8 border-b border-slate-100 bg-gradient-to-r from-amber-50 to-orange-50">
 
-            <div className="space-y-4">
+              <div className="flex items-center gap-4">
+
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-400 flex items-center justify-center shadow-lg shadow-amber-200">
+
+                  <Edit className="w-6 h-6 text-white" />
+
+                </div>
+
+                <div>
+
+                  <h2 className="text-2xl font-bold text-slate-800">
+                    Editar Usuario
+                  </h2>
+
+                  <p className="text-slate-500 text-sm mt-1">
+                    Modifica la información del usuario
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="p-8 space-y-5">
 
               <div>
-                <label className="text-sm font-medium">
+
+                <label className="text-sm font-semibold text-slate-600 mb-2 block">
                   Usuario
                 </label>
 
@@ -573,12 +801,13 @@ const AdminDashboard = () => {
                       nuevo_nombre_usuario: e.target.value
                     })
                   }
-                  className="w-full border rounded-xl px-4 py-2 mt-1"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-amber-400 transition-all"
                 />
               </div>
 
               <div>
-                <label className="text-sm font-medium">
+
+                <label className="text-sm font-semibold text-slate-600 mb-2 block">
                   Nueva contraseña
                 </label>
 
@@ -592,12 +821,13 @@ const AdminDashboard = () => {
                       nueva_contrasena: e.target.value
                     })
                   }
-                  className="w-full border rounded-xl px-4 py-2 mt-1"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-amber-400 transition-all"
                 />
               </div>
 
               <div>
-                <label className="text-sm font-medium">
+
+                <label className="text-sm font-semibold text-slate-600 mb-2 block">
                   Rol
                 </label>
 
@@ -609,38 +839,42 @@ const AdminDashboard = () => {
                       nuevo_rol: e.target.value
                     })
                   }
-                  className="w-full border rounded-xl px-4 py-2 mt-1"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-amber-400 transition-all"
                 >
                   <option value="user">Usuario</option>
                   <option value="admin">Administrador</option>
                 </select>
               </div>
-
             </div>
 
-            <div className="flex justify-end gap-3 mt-8">
+            {/* Footer */}
+            <div className="flex justify-end gap-3 p-8 pt-0">
 
               <button
                 onClick={() => setShowEditModal(false)}
-                className="px-4 py-2 rounded-xl border"
+                className="px-5 py-3 rounded-2xl border border-slate-200 hover:bg-slate-100 text-slate-600 transition-all"
               >
                 Cancelar
               </button>
 
               <button
                 onClick={guardarCambiosUsuario}
-                className="bg-blue-600 text-white px-5 py-2 rounded-xl"
+                className="bg-gradient-to-r from-amber-500 to-orange-400 hover:scale-[1.02] active:scale-[0.98] transition-all text-white px-6 py-3 rounded-2xl shadow-lg shadow-amber-200 font-semibold"
               >
                 Guardar
               </button>
-
             </div>
-
           </div>
         </div>
       )}
-    </div>
+
+
+
+
+
+    </>
   );
+
 };
 
 export default AdminDashboard;

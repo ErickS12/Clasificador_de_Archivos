@@ -1,58 +1,89 @@
 import React from 'react';
-import { LayoutDashboard } from 'lucide-react';
+import {
+  LayoutDashboard,
+  Bell,
+  Search
+} from 'lucide-react';
 
 const Navbar = ({ title = "Dashboard" }) => {
 
-  // 🔥 Usuario real
   const username = localStorage.getItem("username") || "Usuario";
 
   return (
-    <header className="w-full h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-8 sticky top-0 z-50">
 
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-[11px] uppercase font-bold tracking-widest text-slate-400">
+    <header className="sticky top-0 z-50 w-full">
 
-        <LayoutDashboard className="w-4 h-4" />
+      {/* Blur background */}
+      <div className="absolute inset-0 bg-white/80 backdrop-blur-2xl border-b border-slate-200"></div>
 
-        <span>/</span>
+      <div className="relative h-20 px-4 md:px-8 flex items-center justify-between">
 
-        <span className="text-slate-600 whitespace-nowrap">
-          {title}
-        </span>
+        {/* LEFT */}
+        <div className="flex items-center gap-6">
 
-      </div>
+          {/* Breadcrumb */}
+          <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.25em] font-bold">
 
-      {/* Right side */}
-      <div className="flex items-center gap-4 md:gap-6">
+            <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-cyan-200">
 
-        {/* Usuario */}
-        <div className="flex items-center gap-3">
+              <LayoutDashboard className="w-4 h-4 text-white" />
 
-          <div className="text-right hidden sm:block">
-            <p className="text-sm font-bold text-slate-700 uppercase">
-              {username}
-            </p>
+            </div>
 
-            <p className="text-[11px] text-slate-400">
-              En línea
-            </p>
+            <span className="text-slate-300">/</span>
+
+            <span className="text-slate-700 whitespace-nowrap">
+              {title}
+            </span>
           </div>
 
-          {/* Avatar */}
-          <div className="w-9 h-9 bg-blue-600 rounded-full border-2 border-white shadow-sm ring-1 ring-slate-200 overflow-hidden">
-
-            <img
-              src={`https://ui-avatars.com/api/?name=${username}&bg=2563eb&color=fff`}
-              alt="perfil"
-              className="w-full h-full object-cover"
-            />
-
-          </div>
 
         </div>
 
-      </div>
+        {/* RIGHT */}
+        <div className="flex items-center gap-4">
 
+
+          {/* Divider */}
+          <div className="hidden sm:block w-px h-10 bg-slate-200"></div>
+
+          {/* User */}
+          <div className="flex items-center gap-3 pl-1">
+
+            {/* Info */}
+            <div className="text-right hidden sm:block">
+
+              <p className="text-sm font-bold text-slate-800 uppercase tracking-wide">
+                {username}
+              </p>
+
+              <p className="text-[11px] text-cyan-600 font-semibold">
+                En línea
+              </p>
+            </div>
+
+            {/* Avatar */}
+            <div className="relative">
+
+              <div className="absolute inset-0 bg-cyan-400 blur-xl opacity-30 rounded-full"></div>
+
+              <div className="relative w-11 h-11 rounded-2xl overflow-hidden border-2 border-white shadow-lg ring-1 ring-slate-200">
+
+                <img
+                  src={`https://ui-avatars.com/api/?name=${username}&background=2563eb&color=fff`}
+                  alt="perfil"
+                  className="w-full h-full object-cover"
+                />
+
+              </div>
+
+              {/* Online */}
+              <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-500 border-2 border-white rounded-full"></div>
+
+            </div>
+          </div>
+        </div>
+      </div>
     </header>
   );
 };

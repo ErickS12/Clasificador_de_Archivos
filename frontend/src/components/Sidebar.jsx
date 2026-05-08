@@ -18,71 +18,130 @@ const Sidebar = () => {
   };
 
   return (
-    <aside className="w-64 bg-[#0f172a] text-slate-300 flex flex-col min-h-screen">
+  <aside className="w-72 min-h-screen bg-gradient-to-b from-[#0b1120] via-[#111827] to-[#0f172a] border-r border-white/10 text-slate-300 flex flex-col relative overflow-hidden">
 
-      {/* Logo */}
-      <div className="p-6 flex items-center gap-3 border-b border-slate-700/50">
+    {/* Glow Effects */}
+    <div className="absolute top-[-100px] right-[-80px] w-64 h-64 bg-cyan-500/10 blur-3xl rounded-full"></div>
+    <div className="absolute bottom-[-120px] left-[-80px] w-64 h-64 bg-blue-500/10 blur-3xl rounded-full"></div>
 
-        <div className="bg-blue-600 p-2 rounded-lg">
-          <LayoutDashboard className="text-white w-6 h-6" />
+    {/* LOGO */}
+    <div className="relative p-6 border-b border-white/10">
+
+      <div className="flex items-center gap-4">
+
+        {/* Icon */}
+        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center shadow-2xl shadow-cyan-500/20">
+
+          <LayoutDashboard className="text-white w-7 h-7" />
+
         </div>
 
-        <div>
-          <h2 className="text-white font-bold text-sm leading-tight text-left">
+        {/* Text */}
+        <div className="text-left">
+
+          <h2 className="text-white font-bold text-lg leading-tight tracking-tight">
             Sistema Clasificador
           </h2>
 
-          <p className="text-[10px] text-slate-400 uppercase tracking-tighter text-left font-semibold">
+          <p className="text-[11px] uppercase tracking-[0.2em] text-cyan-400 font-semibold mt-1">
             Panel Administrador
           </p>
         </div>
       </div>
+    </div>
 
-      {/* Navegación */}
-      <nav className="flex-1 p-4 space-y-2">
+    {/* NAVIGATION */}
+    <nav className="relative flex-1 p-5">
 
-        <button className="w-full flex items-center gap-3 px-4 py-3 bg-blue-600 text-white rounded-xl text-sm font-medium transition-all shadow-lg shadow-blue-900/20">
-          <Users className="w-5 h-5" />
-          Gestión de Usuarios
-        </button>
+      <div className="mb-4 px-3">
 
-      </nav>
+        <p className="text-[10px] uppercase tracking-[0.3em] text-slate-500 font-bold">
+          Navegación
+        </p>
+      </div>
 
-      {/* Perfil */}
-      <div className="p-4 border-t border-slate-700/50 space-y-4">
+      {/* ACTIVE ITEM */}
+      <button className="group w-full flex items-center justify-between px-4 py-4 rounded-2xl bg-gradient-to-r from-blue-500/20 to-cyan-400/10 border border-cyan-400/10 hover:border-cyan-400/20 transition-all shadow-xl shadow-cyan-500/5">
 
-        <div className="flex items-center gap-3 px-2 py-2">
+        <div className="flex items-center gap-4">
 
-          <div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center text-white text-xs font-bold ring-2 ring-slate-700">
-            {username.charAt(0).toUpperCase()}
+          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+
+            <Users className="w-5 h-5 text-white" />
+
           </div>
 
+          <div className="text-left">
+
+            <p className="text-white font-semibold text-sm">
+              Gestión de Usuarios
+            </p>
+
+            <p className="text-[11px] text-slate-400 mt-0.5">
+              Administración del sistema
+            </p>
+          </div>
+        </div>
+
+        <div className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_12px_rgba(34,211,238,0.8)]"></div>
+      </button>
+    </nav>
+
+    {/* PROFILE */}
+    <div className="relative p-5 border-t border-white/10 backdrop-blur-xl">
+
+      {/* User Card */}
+      <div className="bg-white/5 border border-white/10 rounded-3xl p-4 mb-4">
+
+        <div className="flex items-center gap-4">
+
+          {/* Avatar */}
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-red-500 to-orange-400 flex items-center justify-center text-white text-lg font-bold shadow-lg shadow-red-500/20">
+
+            {username.charAt(0).toUpperCase()}
+
+          </div>
+
+          {/* Info */}
           <div className="overflow-hidden text-left">
 
-            <p className="text-xs font-bold text-white truncate uppercase">
+            <p className="text-sm font-bold text-white truncate uppercase tracking-wide">
               {username}
             </p>
 
-            <p className="text-[10px] text-slate-400 truncate">
+            <p className="text-xs text-slate-400 mt-1">
               {rol === "admin" ? "Administrador" : "Usuario"}
             </p>
-
           </div>
+        </div>
+      </div>
+
+      {/* Logout */}
+      <button
+        onClick={handleLogout}
+        className="w-full flex items-center gap-4 px-4 py-4 rounded-2xl bg-red-500/5 hover:bg-red-500/10 border border-red-400/10 hover:border-red-400/20 transition-all group"
+      >
+
+        <div className="w-11 h-11 rounded-xl bg-red-500/10 group-hover:bg-red-500/20 flex items-center justify-center transition-all">
+
+          <LogOut className="w-5 h-5 text-red-400" />
 
         </div>
 
-        <button
-          onClick={handleLogout}
-          className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-800 rounded-xl text-sm transition-colors text-slate-400 hover:text-white"
-        >
-          <LogOut className="w-5 h-5" />
-          Cerrar Sesión
-        </button>
+        <div className="text-left">
 
-      </div>
+          <p className="text-sm font-semibold text-white">
+            Cerrar Sesión
+          </p>
 
-    </aside>
-  );
+          <p className="text-[11px] text-slate-500">
+            Salir del panel
+          </p>
+        </div>
+      </button>
+    </div>
+  </aside>
+);
 };
 
 export default Sidebar;
