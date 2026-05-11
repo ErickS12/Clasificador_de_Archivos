@@ -165,11 +165,25 @@ def obtener_categorias_globales() -> List[str]:
 # ── SUBTEMATICAS - CATALOGO GLOBAL DE SOLO LECTURA ────────────────────────────
 
 
+#def obtener_subtematicas(tematica_id: str) -> List[Dict[str, Any]]:
+#   """Obtener todas las subtematicas de una tematica."""
+#    try:
+#       response = db.table("subtematicas").select("*").eq("tematica_id", tematica_id).execute()
+#       return response.data if response.data else []
+#   except Exception as e:
+#       print(f"Error obteniendo subtematicas: {e}")
+#       return []
+
 def obtener_subtematicas(tematica_id: str) -> List[Dict[str, Any]]:
     """Obtener todas las subtematicas de una tematica."""
     try:
-        response = db.table("subtematicas").select("*").eq("tematica_id", tematica_id).execute()
+        response = db.table("subtematicas")\
+            .select("*")\
+            .eq("tematica_id", tematica_id)\
+            .execute()
+
         return response.data if response.data else []
+
     except Exception as e:
         print(f"Error obteniendo subtematicas: {e}")
         return []

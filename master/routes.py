@@ -114,8 +114,8 @@ def _obtener_documento_activo(
     return res.data[0]
 
 
-def usuario_actual(autorizacion: str = Header(...)) -> tuple[str, dict[str, Any]]:
-    token = _parse_bearer(autorizacion)
+def usuario_actual(authorization: str = Header(...)) -> tuple[str, dict[str, Any]]:
+    token = _parse_bearer(authorization)
     sesion = obtener_token(token)
 
     if not sesion:
@@ -123,11 +123,13 @@ def usuario_actual(autorizacion: str = Header(...)) -> tuple[str, dict[str, Any]
 
     expira_en = _parse_iso_fecha(sesion.get("expira_en"))
     ahora = datetime.now(timezone.utc)
+
     if expira_en and expira_en <= ahora:
         revocar_token(token)
         raise HTTPException(401, "Token expirado.")
 
     usuario = obtener_usuario_por_id(sesion["usuario_id"])
+
     if not usuario or not usuario.get("activo", True):
         raise HTTPException(401, "Usuario inactivo o inexistente.")
 
@@ -143,7 +145,6 @@ def usuario_actual(autorizacion: str = Header(...)) -> tuple[str, dict[str, Any]
         "categorias_globales": categorias_globales,
         "token": token,
     }
-
 
 def obtener_admin(auth: tuple = Depends(usuario_actual)) -> tuple[str, dict[str, Any]]:
     nombre_usuario, datos = auth

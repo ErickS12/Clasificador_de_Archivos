@@ -1,45 +1,88 @@
 import React from 'react';
-import { Search, Bell, LayoutDashboard } from 'lucide-react';
+import {
+  LayoutDashboard,
+  Bell,
+  Search
+} from 'lucide-react';
 
-const Navbar = ({ title = "Dashboard", user = "Usuario" }) => {
+const Navbar = ({ title = "Dashboard" }) => {
+
+  const username = localStorage.getItem("username") || "Usuario";
+
   return (
-    <header className="w-full h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-8 sticky top-0 z-50">
-      
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-[11px] uppercase font-bold tracking-widest text-slate-400">
-        <LayoutDashboard className="w-4 h-4" />
-        <span>/</span>
-        <span className="text-slate-600 whitespace-nowrap">{title}</span>
-      </div>
 
-      {/* Right side */}
-      <div className="flex items-center gap-4 md:gap-6">
-        
-        {/* Search */}
-        <div className="relative hidden sm:block">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <input 
-            type="text" 
-            placeholder="Buscar..." 
-            className="bg-slate-50 border border-slate-200 pl-10 pr-4 py-2 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500 w-48 md:w-64 transition-all"
-          />
+    <header className="sticky top-0 z-50 w-full">
+
+      {/* Blur background */}
+      <div className="absolute inset-0 bg-white/80 backdrop-blur-2xl border-b border-slate-200"></div>
+
+      <div className="relative h-20 px-4 md:px-8 flex items-center justify-between">
+
+        {/* LEFT */}
+        <div className="flex items-center gap-6">
+
+          {/* Breadcrumb */}
+          <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.25em] font-bold">
+
+            <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-cyan-200">
+
+              <LayoutDashboard className="w-4 h-4 text-white" />
+
+            </div>
+
+            <span className="text-slate-300">/</span>
+
+            <span className="text-slate-700 whitespace-nowrap">
+              {title}
+            </span>
+          </div>
+
+
         </div>
 
-        {/* Notifications */}
-        <div className="relative cursor-pointer">
-          <Bell className="w-5 h-5 text-slate-500" />
-          <span className="absolute -top-1 -right-1 bg-red-500 w-2 h-2 rounded-full border-2 border-white"></span>
-        </div>
+        {/* RIGHT */}
+        <div className="flex items-center gap-4">
 
-        {/* Avatar */}
-        <div className="w-9 h-9 bg-blue-600 rounded-full border-2 border-white shadow-sm ring-1 ring-slate-200 overflow-hidden">
-          <img 
-            src={`https://ui-avatars.com/api/?name=${user}&bg=2563eb&color=fff`} 
-            alt="perfil" 
-            className="w-full h-full object-cover"
-          />
-        </div>
 
+          {/* Divider */}
+          <div className="hidden sm:block w-px h-10 bg-slate-200"></div>
+
+          {/* User */}
+          <div className="flex items-center gap-3 pl-1">
+
+            {/* Info */}
+            <div className="text-right hidden sm:block">
+
+              <p className="text-sm font-bold text-slate-800 uppercase tracking-wide">
+                {username}
+              </p>
+
+              <p className="text-[11px] text-cyan-600 font-semibold">
+                En línea
+              </p>
+            </div>
+
+            {/* Avatar */}
+            <div className="relative">
+
+              <div className="absolute inset-0 bg-cyan-400 blur-xl opacity-30 rounded-full"></div>
+
+              <div className="relative w-11 h-11 rounded-2xl overflow-hidden border-2 border-white shadow-lg ring-1 ring-slate-200">
+
+                <img
+                  src={`https://ui-avatars.com/api/?name=${username}&background=2563eb&color=fff`}
+                  alt="perfil"
+                  className="w-full h-full object-cover"
+                />
+
+              </div>
+
+              {/* Online */}
+              <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-500 border-2 border-white rounded-full"></div>
+
+            </div>
+          </div>
+        </div>
       </div>
     </header>
   );
